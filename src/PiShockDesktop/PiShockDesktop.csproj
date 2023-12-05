@@ -1,11 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ApplicationIcon>Artwork\Logo_128x128.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Artwork\Logo_128x128.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Artwork\Logo_128x128.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Artwork\Logo_128x128.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Raylib-CsLo" Version="4.2.0.9" />
