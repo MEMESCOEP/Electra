@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34322.80
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PiShockDesktop", "PiShockDesktop\PiShockDesktop.csproj", "{13A3F0A1-DB58-4782-B5FA-6BB4561B7810}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{13A3F0A1-DB58-4782-B5FA-6BB4561B7810}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13A3F0A1-DB58-4782-B5FA-6BB4561B7810}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13A3F0A1-DB58-4782-B5FA-6BB4561B7810}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13A3F0A1-DB58-4782-B5FA-6BB4561B7810}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {00DDAE15-44DF-42FA-897D-E81E4C5FB1E8}
+	EndGlobalSection
+EndGlobal
