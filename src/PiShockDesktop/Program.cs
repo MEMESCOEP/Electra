@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Numerics;
+using System.Runtime.InteropServices;
 using Raylib_CsLo;
 
 namespace PiShockDesktop
@@ -13,6 +14,7 @@ namespace PiShockDesktop
         // Integers
         private static int ScreenHeight = 600;
         private static int ScreenWidth = 450;
+        private static int SleepTime = 0;
 
         // Floats
         private static float DragOffsetX = 1f;
@@ -30,16 +32,34 @@ namespace PiShockDesktop
         private static Image TitlebarLogo = Raylib.LoadImage(@"Assets/Logo_32x32.png");
         private static Image TaskbarLogo = Raylib.LoadImage(@"Assets/Logo_128x128.png");
 
+        // Datetimes
+        private static DateTime LastUpdateTime = DateTime.Now;
+
         // Textures
         private static Texture TitlebarLogoTexture;
+
+        // Colors
+        private static Color MinimizePressedColor = new Color(64, 64, 64, 255);
+        private static Color MinimizeNormalColor = new Color(32, 32, 32, 255);
+        private static Color ClosePressedColor = new Color(192, 0, 0, 255);
+        private static Color CloseNormalColor = new Color(64, 0, 0, 255);
+        private static Color TitlebarColor = new Color(12, 12, 12, 255);
+        private static Color BorderColor = new Color(50, 50, 50, 255);
+        private static Color BGColor = new Color(18, 18, 18, 255);
 
         /* DLL IMPORTS */
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(ref System.Drawing.Point lpPoint);
 
+        [DllImport("User32.dll", CharSet = CharSet.Unicode)]
+        public static extern int MessageBox(IntPtr h, string m, string c, int type);
+
         /* FUNCTIONS */
         private static void Main(string[] args)
         {
+            // Configure the PiShock API
+            PiShockAPI.Configure("memescoep", "andrew", "2A215BCA618", "cf9358aa-25f3-4752-83c9-64dc89ad69c9");
+            
             // Set the window flags
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
@@ -48,6 +68,12 @@ namespace PiShockDesktop
             // Create a window
             Raylib.InitWindow(ScreenWidth, ScreenHeight, "PiShock Desktop");
             Raylib.SetWindowIcon(TaskbarLogo);
+            RayGui.GuiLoadStyle("Assets/dark.rgs");
+            //RayGui.GuiSet
+            RayGui.GuiSetStyle(, 0, 0);
+
+            // Calculate the sleep time
+            SleepTime = (int)((1f / Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor())) * 1000f) - 1;
 
             // Create textures from images
             TitlebarLogoTexture = Raylib.LoadTextureFromImage(TitlebarLogo);
@@ -57,7 +83,7 @@ namespace PiShockDesktop
             {
                 // Start drawing
                 Raylib.BeginDrawing();
-                
+
                 // Get the screen space mouse position (the position on the screen in pixels)
                 GetCursorPos(ref MousePos);
 
@@ -66,18 +92,8 @@ namespace PiShockDesktop
                 {
                     DragOffsetX = Math.Abs(Raylib.GetWindowPosition().X - MousePos.X);
                     DragOffsetY = Math.Abs(Raylib.GetWindowPosition().Y - MousePos.Y);
+                    Raylib.SetMouseCursor(9);
                     DragLock = true;
-                }
-
-                // Move the window if the user is dragging it
-                if (DragLock)
-                {
-                    Raylib.SetWindowPosition((int)(MousePos.X - DragOffsetX), (int)(MousePos.Y - DragOffsetY));
-                }
-
-                if (Raylib.IsMouseButtonUp(0))
-                {
-                    DragLock = false;
                 }
 
                 // Update the screen
@@ -86,54 +102,87 @@ namespace PiShockDesktop
                 // Stop drawing
                 Raylib.EndDrawing();
 
-                // Uses slightly less CPU, at minimal framerate cost
-                Thread.Sleep(10);
+                /*PiShockAPI.SendCommand(1, 0.5f, PiShockAPI.CommandType.Shock);
+                PiShockAPI.SendCommand(1, 0.5f, PiShockAPI.CommandType.Vibrate);
+                PiShockAPI.SendCommand(1, 0.5f, PiShockAPI.CommandType.Beep);
+                PiShockAPI.SendCommand(1, 0.5f, PiShockAPI.CommandType.GetShockerInfo);*/
+
+                if (Raylib.IsMouseButtonUp(0))
+                {
+                    Raylib.SetMouseCursor(0);
+                    DragLock = false;
+                }
+
+                // Move the window if the user is dragging it
+                if (DragLock)
+                {
+                    Raylib.SetWindowPosition((int)(MousePos.X - DragOffsetX), (int)(MousePos.Y - DragOffsetY));
+                    
+                    // Uses less CPU, at minimal framerate cost. (Monitor refresh rate)
+                    Thread.Sleep(SleepTime);
+                }
+                else
+                {
+                    // Uses less CPU, at minimal framerate cost. (30 FPS)
+                    Thread.Sleep(32);
+                }
             }
 
-            Thread.Sleep(50);
             Raylib.CloseWindow();
         }
 
         // Draw UI elements
         private static void UpdateScreen()
         {
-            Raylib.ClearBackground(new Color(18, 18, 18, 255));
-            Raylib.DrawRectangle(0, 0, ScreenWidth, 48, new Color(12, 12, 12, 255));
+            Raylib.ClearBackground(BGColor);
+            Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
+            //RayGui.GuiEnable();
+
+            if (RayGui.GuiButton(new Rectangle(16, ScreenHeight - 48, ScreenWidth - 32, 32), "Shock"))
+            {
+                PiShockAPI.SendCommand(1, 0.5f, PiShockAPI.CommandType.Shock);
+            }
 
             // Check if the user is closing the window
-            if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), CloseRect) && Raylib.IsWindowFocused())
+            if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), CloseRect))
             {
-                if (Raylib.IsMouseButtonReleased(0))
+                if (Raylib.IsMouseButtonReleased(0) && Raylib.IsWindowFocused())
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 48, 0, 48, 48, new Color(192, 0, 0, 255));
                     ExitProgram = true;
+                }
+                else if(Raylib.IsMouseButtonDown(0))
+                {
+                    Raylib.DrawRectangle(ScreenWidth - 48, 0, 48, 48, ClosePressedColor);
                 }
                 else
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 48, 0, 48, 48, new Color(64, 0, 0, 255));
+                    Raylib.DrawRectangle(ScreenWidth - 48, 0, 48, 48, CloseNormalColor);
                 }
             }
 
             // Check if the user is minimizing the window
-            else if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), MinimizeRect) && Raylib.IsWindowFocused())
+            else if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), MinimizeRect))
             {
-                if (Raylib.IsMouseButtonReleased(0))
+                if (Raylib.IsMouseButtonReleased(0) && Raylib.IsWindowFocused())
                 {
                     Raylib.MinimizeWindow();
                 }
+                else if (Raylib.IsMouseButtonDown(0))
+                {
+                    Raylib.DrawRectangle(ScreenWidth - 96, 0, 48, 48, MinimizePressedColor);
+                }
                 else
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 96, 0, 48, 48, new Color(32, 32, 32, 255));
+                    Raylib.DrawRectangle(ScreenWidth - 96, 0, 48, 48, MinimizeNormalColor);
                 }
             }
 
-            Raylib.DrawText("PiShock Desktop", 40, 14, 20, new Color(255, 255, 255, 255));
-            Raylib.DrawTexture(TitlebarLogoTexture, 6, 6, new Color(255, 255, 255, 255));
-            Raylib.DrawRectangle(418, 16, 16, 16, new Color(255, 0, 0, 255));
-            Raylib.DrawText("x", 421, 13, 20, new Color(255, 255, 255, 255));
-            Raylib.DrawLine(ScreenWidth - 80, 24, ScreenWidth - 64, 24, new Color(255, 255, 255, 255));
-            Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, new Color(50, 50, 50, 255));
-            //Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, new Color(System.Drawing.SystemColors.Desktop.R, System.Drawing.SystemColors.Desktop.G, System.Drawing.SystemColors.Desktop.B, System.Drawing.SystemColors.Desktop.A));
+            Raylib.DrawText("PiShock Desktop", 40, 14, 20, Raylib.WHITE);
+            Raylib.DrawTexture(TitlebarLogoTexture, 6, 6, Raylib.WHITE);
+            Raylib.DrawRectangle(418, 16, 16, 16, Raylib.RED);
+            Raylib.DrawText("x", 421, 13, 20, Raylib.WHITE);
+            Raylib.DrawLine(ScreenWidth - 80, 24, ScreenWidth - 64, 24, Raylib.WHITE);
+            Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, BorderColor);
         }
     }
 }
