@@ -4,6 +4,13 @@ using System.Text.Json;
 
 namespace PiShockDesktop
 {
+    /* WARNING SUPRESSION */
+    // These are disabled because they piss me off
+    #region WARNING SUPRESSION
+    #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+    #pragma warning disable CS8604 // Possible null reference argument.
+    #endregion
+
     /* CLASSSES */
     #region CLASSES
     public class PiShockAPIConfiguration
@@ -15,6 +22,16 @@ namespace PiShockDesktop
         public float Intensity { get; set; }
         public float Duration { get; set; }
         public PiShockAPI.CommandType Op { get; set; }
+    }
+
+    public class PiShockShockerInfo
+    {
+        public string? Name { get; set; }
+        public bool? IsPaused { get; set; }
+        public bool? IsOnline { get; set; }
+        public float? MaxIntensity { get; set; }
+        public float? MaxDuration { get; set; }
+        public int? ID { get; set; }
     }
 
     public class PiShockAPI
@@ -33,7 +50,10 @@ namespace PiShockDesktop
         /* VARIABLES */
         #region VARIABLES
         // API Configuration(s)
-        private static PiShockAPIConfiguration APIConfig = new PiShockAPIConfiguration();
+        public static PiShockAPIConfiguration APIConfig = new PiShockAPIConfiguration();
+
+        // API Configuration(s)
+        public static PiShockShockerInfo ShockerInfo = new PiShockShockerInfo();
 
         // Strings
         private static string APIUrl = "https://do.pishock.com/api/apioperate/";
@@ -49,12 +69,12 @@ namespace PiShockDesktop
 
         /* FUNCTIONS */
         #region FUNCTIONS
-        public static void Configure(string PiShockUsername, string YourName, string ShareCode, string Key)
+        public static void Configure(string PiShockAccountName, string YourName, string ShareCode, string Key)
         {
             // Set the API configuration variables
             APIConfig = new PiShockAPIConfiguration()
             {
-                Username = PiShockUsername,
+                Username = PiShockAccountName,
                 Name = YourName,
                 Code = ShareCode,
                 Apikey = Key,
@@ -63,6 +83,11 @@ namespace PiShockDesktop
                 Op = CommandType.Vibrate
             };
 
+            UpdateShockerInfo();
+        }
+
+        public static void UpdateShockerInfo()
+        {
             // Serialize the configuration and POST it to the PiShock API via HTTP
             StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
             HttpResponseMessage PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
@@ -71,6 +96,14 @@ namespace PiShockDesktop
             // Set the max intensity and duration limits
             MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
             MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
+
+            // Update the shocker information class
+            ShockerInfo.IsPaused = (bool)JObject.Parse(StringResult)["paused"];
+            ShockerInfo.IsOnline = (bool)JObject.Parse(StringResult)["online"];
+            ShockerInfo.Name = (string)JObject.Parse(StringResult)["name"];
+            ShockerInfo.ID = (int)JObject.Parse(StringResult)["id"];
+            ShockerInfo.MaxIntensity = MaxIntensity;
+            ShockerInfo.MaxDuration = MaxDuration;
         }
 
         public static void SendCommand(float Intensity, float Duration, CommandType Command)
