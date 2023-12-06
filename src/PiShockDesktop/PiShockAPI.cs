@@ -12,8 +12,8 @@ namespace PiShockDesktop
         public string? Name { get; set; }
         public string? Code { get; set; }
         public string? Apikey { get; set; }
-        public int Intensity { get; set; }
-        public int Duration { get; set; }
+        public float Intensity { get; set; }
+        public float Duration { get; set; }
         public PiShockAPI.CommandType Op { get; set; }
     }
 
@@ -51,31 +51,38 @@ namespace PiShockDesktop
         #region FUNCTIONS
         public static void Configure(string PiShockUsername, string YourName, string ShareCode, string Key)
         {
+            // Set the API configuration variables
             APIConfig = new PiShockAPIConfiguration()
             {
                 Username = PiShockUsername,
                 Name = YourName,
                 Code = ShareCode,
                 Apikey = Key,
-                Intensity = 0,
-                Duration = 0,
+                Intensity = 0f,
+                Duration = 0f,
                 Op = CommandType.Vibrate
             };
+
+            // Serialize the configuration and POST it to the PiShock API via HTTP
+            StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
+            HttpResponseMessage PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
+            string StringResult = PostResult.Content.ReadAsStringAsync().Result;
+
+            // Set the max intensity and duration limits
+            MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
+            MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
         }
 
         public static void SendCommand(float Intensity, float Duration, CommandType Command)
         {
             // Clamp the intensty and duration
-            Intensity = Math.Clamp(Intensity, 0, MaxIntensity);
-            Duration = Math.Clamp(Duration, 0, MaxDuration);
-
             // Update the API configuration
-            APIConfig.Intensity = (int)Intensity;
-            APIConfig.Duration = (int)Duration;
+            APIConfig.Intensity = Math.Clamp(Intensity, 0f, MaxIntensity);
+            APIConfig.Duration = Math.Clamp(Duration, 0f, MaxDuration);
             APIConfig.Op = Command;
 
             // Serialize the configuration and POST it to the PiShock API via HTTP
-            var Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
+            StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
             HttpResponseMessage PostResult;
             
             if(Command == CommandType.GetShockerInfo)

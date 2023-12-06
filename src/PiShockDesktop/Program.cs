@@ -68,9 +68,23 @@ namespace PiShockDesktop
             // Create a window
             Raylib.InitWindow(ScreenWidth, ScreenHeight, "PiShock Desktop");
             Raylib.SetWindowIcon(TaskbarLogo);
-            RayGui.GuiLoadStyle("Assets/dark.rgs");
-            //RayGui.GuiSet
-            RayGui.GuiSetStyle(, 0, 0);
+
+            // Set the style manually because raylib doesn't want to load a style properly >:(
+            // Everything starting with '0x' is a color. Some are unchecked because of uint to int conversion
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_NORMAL, 0x024658FF);
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_FOCUSED, 0x3299B4FF);
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_PRESSED, unchecked((int)0xFFBC51FF));
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_DISABLED, 0x024658FF);
+
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.TEXT_COLOR_NORMAL, 0x51BFD3FF);
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.TEXT_COLOR_FOCUSED, unchecked((int)0xB6E1EAFF));
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.TEXT_COLOR_PRESSED, unchecked((int)0xD86F36FF));
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.TEXT_COLOR_DISABLED, 0x51BFD3FF);
+
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_NORMAL, 0x2F7486FF);
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_FOCUSED, unchecked((int)0x82CDE0FF));
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_PRESSED, unchecked((int)0xEB7630FF));
+            RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_DISABLED, 0x2F7486FF);
 
             // Calculate the sleep time
             SleepTime = (int)((1f / Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor())) * 1000f) - 1;
@@ -93,6 +107,7 @@ namespace PiShockDesktop
                     DragOffsetX = Math.Abs(Raylib.GetWindowPosition().X - MousePos.X);
                     DragOffsetY = Math.Abs(Raylib.GetWindowPosition().Y - MousePos.Y);
                     Raylib.SetMouseCursor(9);
+                    RayGui.GuiDisable();
                     DragLock = true;
                 }
 
@@ -110,6 +125,7 @@ namespace PiShockDesktop
                 if (Raylib.IsMouseButtonUp(0))
                 {
                     Raylib.SetMouseCursor(0);
+                    RayGui.GuiEnable();
                     DragLock = false;
                 }
 
@@ -131,16 +147,34 @@ namespace PiShockDesktop
             Raylib.CloseWindow();
         }
 
+        static int h2d(char c)
+        {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            return 0;
+        }
+
         // Draw UI elements
         private static void UpdateScreen()
         {
             Raylib.ClearBackground(BGColor);
             Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
-            //RayGui.GuiEnable();
 
-            if (RayGui.GuiButton(new Rectangle(16, ScreenHeight - 48, ScreenWidth - 32, 32), "Shock"))
+            // Draw and process buttons
+            if (RayGui.GuiButton(new Rectangle(16, 144, ScreenWidth - 32, 32), "Shock"))
             {
-                PiShockAPI.SendCommand(1, 0.5f, PiShockAPI.CommandType.Shock);
+                PiShockAPI.SendCommand(1f, 1f, PiShockAPI.CommandType.Shock);
+            }
+
+            if (RayGui.GuiButton(new Rectangle(16, 104, ScreenWidth - 32, 32), "Vibrate"))
+            {
+                PiShockAPI.SendCommand(1f, 1f, PiShockAPI.CommandType.Vibrate);
+            }
+
+            if (RayGui.GuiButton(new Rectangle(16, 64, ScreenWidth - 32, 32), "Beep"))
+            {
+                PiShockAPI.SendCommand(1f, 1f, PiShockAPI.CommandType.Beep);
             }
 
             // Check if the user is closing the window
