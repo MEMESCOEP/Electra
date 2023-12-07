@@ -5,9 +5,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <ApplicationIcon>Resources\Logo_128x128.ico</ApplicationIcon>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <PackageIcon>Logo_128x128.png</PackageIcon>
+    <Title>PiShock Desktop</Title>
+    <StartupObject></StartupObject>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <ApplicationIcon>Resources\Logo_128x128.ico</ApplicationIcon>
+    <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +28,7 @@
     <PackageReference Include="ini-parser" Version="2.5.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Raylib-CsLo" Version="4.2.0.9" />
+    <PackageReference Include="X11" Version="1.0.6" />
   </ItemGroup>
 
   <ItemGroup>

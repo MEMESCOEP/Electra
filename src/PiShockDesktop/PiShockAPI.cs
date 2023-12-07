@@ -63,8 +63,10 @@ namespace PiShockDesktop
         private static HttpClient HTTP = new HttpClient();
 
         // Floats
-        private static float MaxIntensity = 0f;
-        private static float MaxDuration = 0f;
+        public static float MaxIntensity { get; private set; } = 0f;
+        public static float MaxDuration { get; private set; } = 0f;
+        public static float Intensity = 0f;
+        public static float Duration = 0f;
         #endregion
 
         /* FUNCTIONS */
@@ -104,6 +106,8 @@ namespace PiShockDesktop
             ShockerInfo.ID = (int)JObject.Parse(StringResult)["id"];
             ShockerInfo.MaxIntensity = MaxIntensity;
             ShockerInfo.MaxDuration = MaxDuration;
+
+            //Program.MessageBox(0, StringResult, ":3", 0);
         }
 
         public static void SendCommand(float Intensity, float Duration, CommandType Command)
@@ -180,7 +184,7 @@ namespace PiShockDesktop
                 MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
             }
             
-            Program.MessageBox(0, StringResult, "PiShock Desktop", 64);
+            //Program.MessageBox(0, StringResult, "PiShock Desktop", 64);
         }
         #endregion
     }

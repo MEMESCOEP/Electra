@@ -14,7 +14,7 @@ namespace PiShockDesktop
         private static bool DragLock = false;
 
         // Integers
-        private static int ScreenHeight = 370;
+        private static int ScreenHeight = 420;
         private static int ScreenWidth = 450;
         private static int SleepTime = 0;
 
@@ -80,6 +80,7 @@ namespace PiShockDesktop
 
             // Create a window
             Raylib.InitWindow(ScreenWidth, ScreenHeight, "PiShock Desktop");
+            Raylib.SetWindowTitle("PiShock Desktop");
             Raylib.SetWindowIcon(TaskbarLogo);
 
             // Set the style manually because raylib doesn't want to load a style properly >:(
@@ -98,6 +99,21 @@ namespace PiShockDesktop
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_FOCUSED, unchecked((int)0x82CDE0FF));
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_PRESSED, unchecked((int)0xEB7630FF));
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BORDER_COLOR_DISABLED, 0x2F7486FF);
+
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BASE_COLOR_NORMAL, 0x3299B4FF);
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BASE_COLOR_FOCUSED, 0x3299B4FF);
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BASE_COLOR_PRESSED, unchecked((int)0xFFBC51FF));
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BASE_COLOR_DISABLED, 0x024658FF);
+
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.TEXT_COLOR_NORMAL, 0x51BFD3FF);
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.TEXT_COLOR_FOCUSED, unchecked((int)0xB6E1EAFF));
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.TEXT_COLOR_PRESSED, unchecked((int)0xD86F36FF));
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.TEXT_COLOR_DISABLED, 0x51BFD3FF);
+
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BORDER_COLOR_NORMAL, 0x2F7486FF);
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BORDER_COLOR_FOCUSED, unchecked((int)0x82CDE0FF));
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BORDER_COLOR_PRESSED, unchecked((int)0xEB7630FF));
+            RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BORDER_COLOR_DISABLED, 0x2F7486FF);
 
             // Calculate the sleep time
             SleepTime = (int)((1f / Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor())) * 1000f) - 1;
@@ -147,8 +163,8 @@ namespace PiShockDesktop
                 }
                 else
                 {
-                    // Uses less CPU, at minimal framerate cost. (20 FPS)
-                    Thread.Sleep(50);
+                    // Uses less CPU, at minimal framerate cost. (25 FPS)
+                    Thread.Sleep(40);
                 }
             }
 
@@ -160,7 +176,10 @@ namespace PiShockDesktop
         {
             Raylib.ClearBackground(BGColor);
             Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
-           
+
+            PiShockAPI.Intensity = (int)RayGui.GuiSlider(new Rectangle(16, 224, ScreenWidth - 72, 16), null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 0, PiShockAPI.MaxIntensity);
+            PiShockAPI.Duration = (int)RayGui.GuiSlider(new Rectangle(16, 244, ScreenWidth - 72, 16), null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 0, PiShockAPI.MaxDuration);
+
             // Draw and process buttons
             if (RayGui.GuiButton(new Rectangle(16, 184, ScreenWidth - 32, 32), "REFRESH INFO"))
             {
@@ -169,17 +188,17 @@ namespace PiShockDesktop
 
             if (RayGui.GuiButton(new Rectangle(16, 144, ScreenWidth - 32, 32), "SHOCK"))
             {
-                PiShockAPI.SendCommand(1f, 1f, PiShockAPI.CommandType.Shock);
+                PiShockAPI.SendCommand(PiShockAPI.Intensity, PiShockAPI.Duration, PiShockAPI.CommandType.Shock);
             }
 
             if (RayGui.GuiButton(new Rectangle(16, 104, ScreenWidth - 32, 32), "VIBRATE"))
             {
-                PiShockAPI.SendCommand(1f, 1f, PiShockAPI.CommandType.Vibrate);
+                PiShockAPI.SendCommand(PiShockAPI.Intensity, PiShockAPI.Duration, PiShockAPI.CommandType.Vibrate);
             }
 
             if (RayGui.GuiButton(new Rectangle(16, 64, ScreenWidth - 32, 32), "BEEP"))
             {
-                PiShockAPI.SendCommand(1f, 1f, PiShockAPI.CommandType.Beep);
+                PiShockAPI.SendCommand(PiShockAPI.Intensity, PiShockAPI.Duration, PiShockAPI.CommandType.Beep);
             }
 
             // Check if the user is closing the window
@@ -216,14 +235,14 @@ namespace PiShockDesktop
                 }
             }
 
-            Raylib.DrawRectangleLinesEx(new Rectangle(16, 224, ScreenWidth - 32, 130), 2, Raylib.GetColor(0x2F7486FF));
-            Raylib.DrawRectangle(18, 226, ScreenWidth - 36, 126, Raylib.GetColor(0x024658FF));
-            Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 230, 20, Raylib.GOLD);
-            Raylib.DrawText($"    ID: {PiShockAPI.ShockerInfo.ID}", 22, 250, 20, Raylib.GOLD);
-            Raylib.DrawText($"    Paused: {PiShockAPI.ShockerInfo.IsPaused}", 22, 270, 20, Raylib.GOLD);
-            Raylib.DrawText($"    Online: {PiShockAPI.ShockerInfo.IsOnline}", 22, 290, 20, Raylib.GOLD);
-            Raylib.DrawText($"    Max int & dur: {PiShockAPI.ShockerInfo.MaxIntensity}, {PiShockAPI.ShockerInfo.MaxDuration}", 22, 310, 20, Raylib.GOLD);
-            Raylib.DrawText($"    Share code: {PiShockAPI.APIConfig.Code}", 22, 330, 20, Raylib.GOLD);
+            Raylib.DrawRectangleLinesEx(new Rectangle(16, 268, ScreenWidth - 32, 134), 2, Raylib.GetColor(0x2F7486FF));
+            Raylib.DrawRectangle(18, 270, ScreenWidth - 36, 130, Raylib.GetColor(0x024658FF));
+            Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 274, 20, Raylib.GOLD);
+            Raylib.DrawText($"    ID: {PiShockAPI.ShockerInfo.ID}", 22, 294, 20, Raylib.GOLD);
+            Raylib.DrawText($"    Paused: {PiShockAPI.ShockerInfo.IsPaused}", 22, 314, 20, Raylib.GOLD);
+            Raylib.DrawText($"    Online: {PiShockAPI.ShockerInfo.IsOnline}", 22, 334, 20, Raylib.GOLD);
+            Raylib.DrawText($"    Max int & dur: {PiShockAPI.ShockerInfo.MaxIntensity}, {PiShockAPI.ShockerInfo.MaxDuration}", 22, 354, 20, Raylib.GOLD);
+            Raylib.DrawText($"    Share code: {PiShockAPI.APIConfig.Code}", 22, 374, 20, Raylib.GOLD);
 
             Raylib.DrawText("PiShock Desktop", 40, 14, 20, Raylib.GOLD);
             Raylib.DrawTexture(TitlebarLogoTexture, 6, 6, Raylib.WHITE);
