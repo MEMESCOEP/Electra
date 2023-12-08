@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System.Text;
 using Raylib_CsLo;
+using System.Numerics;
 
 namespace PiShockDesktop
 {
@@ -204,8 +205,8 @@ namespace PiShockDesktop
             Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
 
             // Get the intensity and duration from the sliders
-            PiShockAPI.Intensity = (int)RayGui.GuiSliderBar(new Rectangle(16, 224, ScreenWidth - 72, 16), null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 0, PiShockAPI.MaxIntensity);
-            PiShockAPI.Duration = (int)RayGui.GuiSliderBar(new Rectangle(16, 244, ScreenWidth - 72, 16), null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 0, PiShockAPI.MaxDuration);
+            PiShockAPI.Intensity = (int)RayGui.GuiSlider(new Rectangle(16, 224, ScreenWidth - 72, 16), null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 0, PiShockAPI.MaxIntensity);
+            PiShockAPI.Duration = (int)RayGui.GuiSlider(new Rectangle(16, 244, ScreenWidth - 72, 16), null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 0, PiShockAPI.MaxDuration);
 
             // Draw and process buttons
             // Refresh information button
@@ -268,6 +269,7 @@ namespace PiShockDesktop
 
             // Draw the shocker information
             //RayGui.GuiGroupBox(new Rectangle(12, 58, ScreenWidth - 24, 164), "Controls");
+            //RayGui.GuiScrollPanel(new Rectangle(16, 268, ScreenWidth - 32, 114), "Test ScrollPanel", new Rectangle(16, 268, ScreenWidth - 32, 114), new Vector2(0, 0));
             Raylib.DrawRectangleLinesEx(new Rectangle(16, 268, ScreenWidth - 32, 114), 2, Raylib.GetColor(0x2F7486FF));
             Raylib.DrawRectangle(18, 270, ScreenWidth - 36, 110, Raylib.GetColor(0x024658FF));
             Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 274, 20, Raylib.GOLD);
