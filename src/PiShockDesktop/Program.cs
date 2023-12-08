@@ -190,7 +190,7 @@ namespace PiShockDesktop
                 else
                 {
                     // Uses less CPU, at minimal framerate cost. (25 FPS)
-                    Thread.Sleep(40);
+                    Thread.Sleep(32);
                 }
             }
 
