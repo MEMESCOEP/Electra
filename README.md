@@ -1,6 +1,9 @@
 # ⚡PiShock Desktop⚡
 A desktop application for controlling PiShock devices.
-<br/><br/>
+
+For compilation instructions, look [here](https://github.com/MEMESCOEP/PiShockDesktop/blob/main/Build.md).<br/>For setup instructions, look [here](https://github.com/MEMESCOEP/PiShockDesktop/blob/main/Setup.md).
+
+<br/>
 
 ## 🦺 A quick note about safety 🦺
 ***Discuss limits and boundaries before use!***
