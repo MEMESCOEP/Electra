@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -9,7 +9,7 @@
     <PackageIcon>Logo_128x128.png</PackageIcon>
     <Title>PiShock Desktop</Title>
     <StartupObject></StartupObject>
-    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <AssemblyName>PiShock Desktop</AssemblyName>
     <ApplicationIcon>Resources\Logo_128x128.ico</ApplicationIcon>
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>

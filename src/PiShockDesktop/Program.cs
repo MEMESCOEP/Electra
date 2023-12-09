@@ -1,8 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
-using System.Text;
 using Raylib_CsLo;
-using System.Numerics;
 
 namespace PiShockDesktop
 {
@@ -19,6 +17,9 @@ namespace PiShockDesktop
         /* VARIABLES */
         #region VARIABLES
         // Booleans
+        private static bool UseStationaryFPSLimit = true;
+        private static bool UseDraggingFPSLimit = true;
+        private static bool EnableVerticalSync = true;
         private static bool ExitProgram = false;
         private static bool DragLock = false;
 
@@ -35,9 +36,6 @@ namespace PiShockDesktop
         private static System.Drawing.Point MousePos;
 
         // Rectangles
-        private static Rectangle ShareCodeTextBoxRect = new Rectangle(16, 224, ScreenWidth - 32, 32);
-        private static Rectangle UsernameTextBoxRect = new Rectangle(16, 264, ScreenWidth - 32, 32);
-        private static Rectangle APIKeyTextBoxRect = new Rectangle(16, 184, ScreenWidth - 32, 32);
         private static Rectangle MinimizeRect = new Rectangle(ScreenWidth - 96, 0, 48, 48);
         private static Rectangle CloseRect = new Rectangle(ScreenWidth - 48, 0, 48, 48);
         private static Rectangle DragRect = new Rectangle(0, 0, ScreenWidth - 96, 48);
@@ -58,10 +56,13 @@ namespace PiShockDesktop
         private static Color BorderColor = new Color(50, 50, 50, 255);
         private static Color BGColor = new Color(18, 18, 18, 255);
 
-        // String builders
-        private static StringBuilder ShareCodeTextBoxText = new StringBuilder("SHARE CODE", 36);
-        private static StringBuilder UsernameTextBoxText = new StringBuilder("USERNAME", 36);
-        private static StringBuilder APIKeyTextBoxText = new StringBuilder("API KEY", 36);
+        // Timers
+        private static Timer DragLockTimer = new Timer(0.1, new Action(() => { RayGui.GuiUnlock(); }));
+        
+        // Strings
+        private static string Logo128Path = @"Assets/Logo_128x128.png";
+        private static string Logo32Path = @"Assets/Logo_32x32.png";
+        private static string ConfigPath = @"Assets/PiShockDesktopConfiguration.json";
         #endregion
 
         /* DLL IMPORTS */
@@ -80,33 +81,48 @@ namespace PiShockDesktop
             try
             {
                 // Read the INI configuration file
-                JObject ConfigData = JObject.Parse(File.ReadAllText(@"Assets/PiShockDesktopConfiguration.json"));
+                JObject ConfigData = JObject.Parse(File.ReadAllText(ConfigPath));
                 JArray ShareCodeArray = (JArray)ConfigData["ShareCodes"];
 
                 // Configure the PiShock API
                 PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
 
+                // Enable/Disable VSync and apply FPS limits if required
+                UseStationaryFPSLimit = ConfigData.SelectToken("UseStationaryFPSLimit").Value<bool>();
+                UseDraggingFPSLimit = ConfigData.SelectToken("UseDraggingFPSLimit").Value<bool>();
+                EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
+
                 // Load images
-                TitlebarLogo = Raylib.LoadImage(@"Assets/Logo_32x32.png");
-                TaskbarLogo = Raylib.LoadImage(@"Assets/Logo_128x128.png");
+                TitlebarLogo = Raylib.LoadImage(Logo32Path);
+                TaskbarLogo = Raylib.LoadImage(Logo128Path);
             }
             catch (Exception ex)
             {
-                MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "PiShock Desktop - Error", 16);
+                if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "PiShock Desktop - Configuration Error", 20) == 6)
+                {
+                    MessageBox(0, $"Configuration path: (\"{Path.GetFullPath(ConfigPath)}\")\n\nError: {ex.Message}\n\nStack trace: {ex.StackTrace}", "PiShock Desktop - Configuration Error", 16);
+                }
+
+                MessageBox(0, "The application will now close.", "PiShock Desktop", 64);
+                Environment.Exit(ex.HResult);
             }
 
             // Set the window flags
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
-            Raylib.SetConfigFlags(ConfigFlags.FLAG_VSYNC_HINT);
 
-            // Create a window
+            if (EnableVerticalSync)
+            {
+                Raylib.SetConfigFlags(ConfigFlags.FLAG_VSYNC_HINT);
+            }
+
+            // Create a window and set it's icon
             Raylib.InitWindow(ScreenWidth, ScreenHeight, "PiShock Desktop");
-            Raylib.SetWindowTitle("PiShock Desktop");
             Raylib.SetWindowIcon(TaskbarLogo);
 
-            // Set the style manually because raylib doesn't want to load a style properly >:(
-            // Everything starting with '0x' is a color. Some are unchecked because of uint to int conversion
+            // Set the style manually because raylib doesn't seem to want to load a style from the disk properly >:(
+            // Everything starting with '0x' is a color, some are unchecked due to uint -> int conversion. And yes, this
+            // is probably a shitty way to accomplish this, I just don't know any better ways as of right now
             // Button
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_NORMAL, 0x024658FF);
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_FOCUSED, 0x3299B4FF);
@@ -139,7 +155,9 @@ namespace PiShockDesktop
             RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BORDER_COLOR_PRESSED, unchecked((int)0xEB7630FF));
             RayGui.GuiSetStyle((int)GuiControl.SLIDER, (int)GuiControlProperty.BORDER_COLOR_DISABLED, 0x2F7486FF);
             
-            // Calculate the drag sleep time in milliseconds
+            // Calculate the drag sleep time in milliseconds. I would use raylib's vsync here, but it increases CPU Usage of up to 30% when
+            // using it on lower end hardware. Calculating this allows for reduced resource usage, and since this is a GUI application, it
+            // shouldn't need to use a bunch of resources.
             DragSleepTime = (int)((1f / Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor())) * 1000f) - 1;
 
             // Create textures from images
@@ -161,39 +179,55 @@ namespace PiShockDesktop
                     DragOffsetY = Math.Abs(Raylib.GetWindowPosition().Y - MousePos.Y);
                     Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_ALL);
                     RayGui.GuiLock();
+                    DragLockTimer.Reset();
                     DragLock = true;
                 }
 
-                // Update the screen
-                UpdateScreen();
-
-                // Stop drawing
-                Raylib.EndDrawing();
-
                 // If the user has just stopped draging the window, reset the mouse cursor and enable the GUI after 100 ms
-                if (Raylib.IsMouseButtonReleased(0) && DragLock)
+                if (DragLock && Raylib.IsMouseButtonUp(0))
                 {
-                    Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
-                    Thread.Sleep(100);
-                    RayGui.GuiUnlock();
                     DragLock = false;
+                    Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
+                    DragLockTimer.Start();
                 }
 
                 // Move the window if the user is dragging it
                 if (DragLock)
                 {
+                    // Set the window's position using the mouse position
                     Raylib.SetWindowPosition((int)(MousePos.X - DragOffsetX), (int)(MousePos.Y - DragOffsetY));
-                    
+
                     // Uses less CPU, at minimal framerate cost. (Monitor refresh rate)
-                    Thread.Sleep(DragSleepTime);
+                    if (UseDraggingFPSLimit)
+                    {
+                        Thread.Sleep(DragSleepTime);
+                    }
                 }
                 else
                 {
-                    // Uses less CPU, at minimal framerate cost. (25 FPS)
-                    Thread.Sleep(32);
+                    // Uses less CPU, at minimal framerate cost. (30 FPS)
+                    if (UseStationaryFPSLimit)
+                    {
+                        Thread.Sleep(32);
+                    }
                 }
+
+                // Update timers
+                DragLockTimer.Update();
+
+                // Draw window elements
+                UpdateScreen();
+
+                // Stop drawing
+                Raylib.EndDrawing();
             }
 
+            // Unload assets to prevent memory leaks and file errors
+            Raylib.UnloadImage(TaskbarLogo);
+            Raylib.UnloadImage(TitlebarLogo);
+            Raylib.UnloadTexture(TitlebarLogoTexture);
+
+            // Exit the application
             Raylib.CloseWindow();
         }
 
@@ -268,8 +302,6 @@ namespace PiShockDesktop
             }
 
             // Draw the shocker information
-            //RayGui.GuiGroupBox(new Rectangle(12, 58, ScreenWidth - 24, 164), "Controls");
-            //RayGui.GuiScrollPanel(new Rectangle(16, 268, ScreenWidth - 32, 114), "Test ScrollPanel", new Rectangle(16, 268, ScreenWidth - 32, 114), new Vector2(0, 0));
             Raylib.DrawRectangleLinesEx(new Rectangle(16, 268, ScreenWidth - 32, 114), 2, Raylib.GetColor(0x2F7486FF));
             Raylib.DrawRectangle(18, 270, ScreenWidth - 36, 110, Raylib.GetColor(0x024658FF));
             Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 274, 20, Raylib.GOLD);

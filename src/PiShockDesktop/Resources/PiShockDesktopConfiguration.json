@@ -1,8 +1,11 @@
 {
   "PiShockAccountName": "memescoep",
-  "YourName": "TestUser",
+  "YourName": "PiShock Desktop test user",
   "ShareCodes": [
     "2A215BCA618"
   ],
-  "APIKey": "cf9358aa-25f3-4752-83c9-64dc89ad69c9"
+  "APIKey": "cf9358aa-25f3-4752-83c9-64dc89ad69c9",
+  "UseStationaryFPSLimit": true,
+  "UseDraggingFPSLimit": true,
+  "EnableVSync": true
 }

@@ -129,8 +129,7 @@ namespace PiShockDesktop
 
             try
             {
-                // Clamp the intensty and duration
-                // Update the API configuration
+                // Clamp the intensty and duration and update the API configuration
                 APIConfig.Intensity = Math.Clamp(Intensity, 0f, MaxIntensity);
                 APIConfig.Duration = Math.Clamp(Duration, 0f, MaxDuration);
                 APIConfig.Op = Command;
@@ -148,21 +147,21 @@ namespace PiShockDesktop
                     PostResult = HTTP.PostAsync(APIUrl, Content).Result;
                 }
 
-                var StringResult = PostResult.Content.ReadAsStringAsync().Result;
+                string StringResult = PostResult.Content.ReadAsStringAsync().Result;
 
                 // Get the API return code
                 switch (StringResult)
                 {
                     case "This code doesn't exist.":
-                        Program.MessageBox(0, "The code you entered doesn't exist.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Not Authorized.":
-                        Program.MessageBox(0, "The username or API key you entered is incorrect, or your account hasn't been activated yet.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "The username or API key is incorrect, or your account hasn't been activated yet.", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Shocker is Paused or does not exist. Unpause to send command.":
-                        Program.MessageBox(0, "The shocker was paused from the PiShock web interface.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "This shocker is currently paused, or does not exist.", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Device currently not connected.":
@@ -170,23 +169,23 @@ namespace PiShockDesktop
                         break;
 
                     case "This share code has already been used by somebody else.":
-                        Program.MessageBox(0, "The share code you entered is already in use.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, $"The share code \"{PiShockAPI.APIConfig.Code}\" is already in use.", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Unknown Op, use 0 for shock, 1 for vibrate and 2 for beep.":
-                        Program.MessageBox(0, $"The API did not recognize the operation ({APIConfig.Op.ToString()}).", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Beep not allowed.":
-                        Program.MessageBox(0, "Another user has disabled beeping for this shocker.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "Beeping has been disabled for this share code.", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Shock not allowed.":
-                        Program.MessageBox(0, "Another user has disabled shocking for this shocker.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "Shocking has been disabled for this share code", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Vibrate not allowed.":
-                        Program.MessageBox(0, "Another user has disabled vibrating for this shocker.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "Vibrating has been disabled for this share code", "PiShock Desktop - Error", 16);
                         break;
 
                     case "Operation Succeeded.":
@@ -208,8 +207,6 @@ namespace PiShockDesktop
 
             // Set the mouse cursor
             Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
-
-            //Program.MessageBox(0, StringResult, "PiShock Desktop", 64);
         }
         #endregion
     }
