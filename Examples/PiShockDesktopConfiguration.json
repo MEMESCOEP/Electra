@@ -1,0 +1,11 @@
+{
+  "PiShockAccountName": "YourAccountName",
+  "YourName": "YourUsername",
+  "ShareCodes": [
+    "ShareCode"
+  ],
+  "APIKey": "Key",
+  "UseStationaryFPSLimit": true,
+  "UseDraggingFPSLimit": true,
+  "EnableVSync": true
+}
