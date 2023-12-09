@@ -13,10 +13,8 @@ PiShock Desktop uses the following libraries:
 <br/>
 
 ## Compilation
-### Output
-The output directory where the final binary and DLLs will be located is `bin/Debug/net8.0/` or `bin/Release/net8.0/`.
-
-<br/>
+> [!NOTE]
+> The output directory where the final binary and DLLs will be located is `bin/Debug/net8.0/` or `bin/Release/net8.0/`.
 
 ### Visual Studio
 Open the solution and Press either `F5` to compile & debug, or `CRTL+SHIFT+B` to compile without debugging.
