@@ -101,17 +101,21 @@ namespace PiShockDesktop
                 HttpResponseMessage PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
                 string StringResult = PostResult.Content.ReadAsStringAsync().Result;
 
-                // Set the max intensity and duration limits
-                MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
-                MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
+                // Make sure we get a valid json response from the PiShock API
+                if (ParseAPIResult(StringResult))
+                {
+                    // Set the max intensity and duration limits
+                    MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
+                    MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
 
-                // Update the shocker information class
-                ShockerInfo.IsPaused = (bool)JObject.Parse(StringResult)["paused"];
-                ShockerInfo.IsOnline = (bool)JObject.Parse(StringResult)["online"];
-                ShockerInfo.Name = (string)JObject.Parse(StringResult)["name"];
-                ShockerInfo.ID = (int)JObject.Parse(StringResult)["id"];
-                ShockerInfo.MaxIntensity = MaxIntensity;
-                ShockerInfo.MaxDuration = MaxDuration;
+                    // Update the shocker information class
+                    ShockerInfo.IsPaused = (bool)JObject.Parse(StringResult)["paused"];
+                    ShockerInfo.IsOnline = (bool)JObject.Parse(StringResult)["online"];
+                    ShockerInfo.Name = (string)JObject.Parse(StringResult)["name"];
+                    ShockerInfo.ID = (int)JObject.Parse(StringResult)["id"];
+                    ShockerInfo.MaxIntensity = MaxIntensity;
+                    ShockerInfo.MaxDuration = MaxDuration;
+                }
             }
             catch(Exception ex)
             {
@@ -148,52 +152,13 @@ namespace PiShockDesktop
                 }
 
                 string StringResult = PostResult.Content.ReadAsStringAsync().Result;
+                PostResult.Dispose();
+                Content.Dispose();
 
-                // Get the API return code
-                switch (StringResult)
-                {
-                    case "This code doesn't exist.":
-                        Program.MessageBox(0, $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", "PiShock Desktop - Error", 16);
-                        break;
+                // Parse the API result
+                ParseAPIResult(StringResult);
 
-                    case "Not Authorized.":
-                        Program.MessageBox(0, "The username or API key is incorrect, or your account hasn't been activated yet.", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Shocker is Paused or does not exist. Unpause to send command.":
-                        Program.MessageBox(0, "This shocker is currently paused, or does not exist.", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Device currently not connected.":
-                        Program.MessageBox(0, "The hub is not connected.", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "This share code has already been used by somebody else.":
-                        Program.MessageBox(0, $"The share code \"{PiShockAPI.APIConfig.Code}\" is already in use.", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Unknown Op, use 0 for shock, 1 for vibrate and 2 for beep.":
-                        Program.MessageBox(0, $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Beep not allowed.":
-                        Program.MessageBox(0, "Beeping has been disabled for this share code.", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Shock not allowed.":
-                        Program.MessageBox(0, "Shocking has been disabled for this share code", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Vibrate not allowed.":
-                        Program.MessageBox(0, "Vibrating has been disabled for this share code", "PiShock Desktop - Error", 16);
-                        break;
-
-                    case "Operation Succeeded.":
-                    case "Operation Attempted.":
-                    default:
-                        break;
-                }
-
+                // If the command was
                 if (Command == CommandType.GetShockerInfo)
                 {
                     MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
@@ -207,6 +172,72 @@ namespace PiShockDesktop
 
             // Set the mouse cursor
             Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
+        }
+
+        public static bool ParseAPIResult(string Result)
+        {
+            // Get the API return code
+            // If the recieved result has a client ID field, we can assume that a call to the API's GetShockerInfo function was made
+            if (Result.Contains("clientId"))
+            {
+                return true;
+            }
+
+            // If the recieved result does NOT have a client ID field, we can assume that we called some other API function or an error occurred
+            switch (Result)
+            {
+                case "This code doesn't exist.":
+                    Program.MessageBox(0, $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Not Authorized.":
+                    Program.MessageBox(0, "The username or API key is incorrect, or your account hasn't been activated yet.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Shocker is Paused or does not exist. Unpause to send command.":
+                    Program.MessageBox(0, "This shocker is currently paused, or does not exist.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Device currently not connected.":
+                    Program.MessageBox(0, "The hub is not connected.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "This share code has already been used by somebody else.":
+                    Program.MessageBox(0, $"The share code \"{PiShockAPI.APIConfig.Code}\" is already in use.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Unknown Op, use 0 for shock, 1 for vibrate and 2 for beep.":
+                    Program.MessageBox(0, $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Beep not allowed.":
+                    Program.MessageBox(0, "Beeping has been disabled for this share code.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Shock not allowed.":
+                    Program.MessageBox(0, "Shocking has been disabled for this share code.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Vibrate not allowed.":
+                    Program.MessageBox(0, "Vibrating has been disabled for this share code.", "PiShock Desktop - Error", 16);
+                    return false;
+
+                case "Operation Succeeded.":
+                case "Operation Attempted.":
+                    return true;
+
+                default:
+                    if (!string.IsNullOrEmpty(Result))
+                    {
+                        Program.MessageBox(0, $"The PiShock API has sent an invalid response. Recieved data: {Result}", "PiShock Desktop - Error", 16);
+                    }
+                    else
+                    {
+                        Program.MessageBox(0, "The PiShock API did not respond. Make sure both you and the API are online.", "PiShock Desktop - Error", 16);
+                    }
+                    
+                    return false;
+            }
         }
         #endregion
     }

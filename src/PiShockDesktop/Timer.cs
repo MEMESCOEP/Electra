@@ -10,6 +10,7 @@ namespace PiShockDesktop
         public double TimerDuration = 0;    // Lifetime (seconds)
         public double TimeUntilDone = 0;
         public bool TimerStarted = false;
+        public bool Recurring = false;
 
         /* CONSTRUCTORS */
         public Timer(double Duration, Action DoneAction)
@@ -37,6 +38,11 @@ namespace PiShockDesktop
         {
             TimeUntilDone = TimerDuration;
             Stop();
+
+            if (Recurring)
+            {
+                Start();
+            }
         }
 
         public void Update()

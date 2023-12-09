@@ -4,6 +4,12 @@ using Raylib_CsLo;
 
 namespace PiShockDesktop
 {
+    /********** NOTE **********/
+    // Rivatuner Statistics Server (framerate counter) seems to cause memory leaks as well as an instant increase of about 20 MB of ram.
+    // I'm unsure why this happens, but I'm trying to find a fix. Fraps does not seem to have this issue as of right now.
+    // For now, I've using a timer to call the garbage collector untill I figure out what's going on, as there seems to be 
+    // a memory leak somewhere else in my code.
+
     /* WARNING SUPRESSION */
     // These are disabled because they piss me off (and they aren't a concern)
     #region WARNING SUPRESSION
@@ -36,8 +42,15 @@ namespace PiShockDesktop
         private static System.Drawing.Point MousePos;
 
         // Rectangles
+        private static Rectangle IntensityRect = new Rectangle(16, 224, ScreenWidth - 72, 16);
+        private static Rectangle DurationRect = new Rectangle(16, 244, ScreenWidth - 72, 16);
         private static Rectangle MinimizeRect = new Rectangle(ScreenWidth - 96, 0, 48, 48);
+        private static Rectangle RefreshRect = new Rectangle(16, 184, ScreenWidth - 32, 32);
+        private static Rectangle VibrateRect = new Rectangle(16, 104, ScreenWidth - 32, 32);
         private static Rectangle CloseRect = new Rectangle(ScreenWidth - 48, 0, 48, 48);
+        private static Rectangle ShockRect = new Rectangle(16, 144, ScreenWidth - 32, 32);
+        private static Rectangle InfoRect = new Rectangle(16, 268, ScreenWidth - 32, 114);
+        private static Rectangle BeepRect = new Rectangle(16, 64, ScreenWidth - 32, 32);
         private static Rectangle DragRect = new Rectangle(0, 0, ScreenWidth - 96, 48);
 
         // Images
@@ -57,8 +70,9 @@ namespace PiShockDesktop
         private static Color BGColor = new Color(18, 18, 18, 255);
 
         // Timers
-        private static Timer DragLockTimer = new Timer(0.1, new Action(() => { RayGui.GuiUnlock(); }));
-        
+        private static Timer GarbageCollectionTimer = new Timer(5, new Action(() => GC.Collect()));
+        private static Timer DragLockTimer = new Timer(0.1, new Action(() => RayGui.GuiUnlock()));
+
         // Strings
         private static string Logo128Path = @"Assets/Logo_128x128.png";
         private static string Logo32Path = @"Assets/Logo_32x32.png";
@@ -80,7 +94,13 @@ namespace PiShockDesktop
         {
             try
             {
-                // Read the INI configuration file
+                // Make sure the configuration file exists
+                if (!File.Exists(ConfigPath))
+                {
+                    throw new FileNotFoundException("The configuration file could not be found.");
+                }
+
+                // Read the JSON configuration file
                 JObject ConfigData = JObject.Parse(File.ReadAllText(ConfigPath));
                 JArray ShareCodeArray = (JArray)ConfigData["ShareCodes"];
 
@@ -100,7 +120,7 @@ namespace PiShockDesktop
             {
                 if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "PiShock Desktop - Configuration Error", 20) == 6)
                 {
-                    MessageBox(0, $"Configuration path: (\"{Path.GetFullPath(ConfigPath)}\")\n\nError: {ex.Message}\n\nStack trace: {ex.StackTrace}", "PiShock Desktop - Configuration Error", 16);
+                    MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "PiShock Desktop - Configuration Error", 16);
                 }
 
                 MessageBox(0, "The application will now close.", "PiShock Desktop", 64);
@@ -163,6 +183,10 @@ namespace PiShockDesktop
             // Create textures from images
             TitlebarLogoTexture = Raylib.LoadTextureFromImage(TitlebarLogo);
 
+            // Configure and start the garbage collection timer
+            GarbageCollectionTimer.Recurring = true;
+            GarbageCollectionTimer.Start();
+
             // Main loop
             while (!ExitProgram && !Raylib.WindowShouldClose())
             {
@@ -170,10 +194,13 @@ namespace PiShockDesktop
                 Raylib.BeginDrawing();
 
                 // Get the screen space mouse position (the non-relative position on the screen in pixels)
-                GetCursorPos(ref MousePos);
+                if(Raylib.GetMouseDelta() != System.Numerics.Vector2.Zero)
+                {
+                    GetCursorPos(ref MousePos);
+                }
 
                 // Check if the user is dragging the window
-                if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), DragRect) && Raylib.IsWindowFocused() && Raylib.IsMouseButtonPressed(0))
+                if (!DragLock && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), DragRect) && Raylib.IsWindowFocused() && Raylib.IsMouseButtonPressed(0))
                 {
                     DragOffsetX = Math.Abs(Raylib.GetWindowPosition().X - MousePos.X);
                     DragOffsetY = Math.Abs(Raylib.GetWindowPosition().Y - MousePos.Y);
@@ -183,19 +210,19 @@ namespace PiShockDesktop
                     DragLock = true;
                 }
 
-                // If the user has just stopped draging the window, reset the mouse cursor and enable the GUI after 100 ms
-                if (DragLock && Raylib.IsMouseButtonUp(0))
-                {
-                    DragLock = false;
-                    Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
-                    DragLockTimer.Start();
-                }
-
                 // Move the window if the user is dragging it
                 if (DragLock)
                 {
                     // Set the window's position using the mouse position
                     Raylib.SetWindowPosition((int)(MousePos.X - DragOffsetX), (int)(MousePos.Y - DragOffsetY));
+
+                    // If the user has just stopped draging the window, reset the mouse cursor and enable the GUI after 100 ms
+                    if (Raylib.IsMouseButtonUp(0))
+                    {
+                        DragLock = false;
+                        Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
+                        DragLockTimer.Start();
+                    }
 
                     // Uses less CPU, at minimal framerate cost. (Monitor refresh rate)
                     if (UseDraggingFPSLimit)
@@ -213,6 +240,7 @@ namespace PiShockDesktop
                 }
 
                 // Update timers
+                GarbageCollectionTimer.Update();
                 DragLockTimer.Update();
 
                 // Draw window elements
@@ -220,6 +248,13 @@ namespace PiShockDesktop
 
                 // Stop drawing
                 Raylib.EndDrawing();
+
+                // If the garbage collection timer has finished running, reset it
+                /*if (GarbageCollectionTimer.TimerDone())
+                {
+                    MessageBox(0, "GC called", "DFJKHJSDF", 64);
+                    GarbageCollectionTimer.Start();
+                }*/
             }
 
             // Unload assets to prevent memory leaks and file errors
@@ -239,30 +274,30 @@ namespace PiShockDesktop
             Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
 
             // Get the intensity and duration from the sliders
-            PiShockAPI.Intensity = (int)RayGui.GuiSlider(new Rectangle(16, 224, ScreenWidth - 72, 16), null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 0, PiShockAPI.MaxIntensity);
-            PiShockAPI.Duration = (int)RayGui.GuiSlider(new Rectangle(16, 244, ScreenWidth - 72, 16), null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 0, PiShockAPI.MaxDuration);
+            PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 0, PiShockAPI.MaxIntensity);
+            PiShockAPI.Duration = (int)RayGui.GuiSlider(DurationRect, null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 0, PiShockAPI.MaxDuration);
 
             // Draw and process buttons
             // Refresh information button
-            if (RayGui.GuiButton(new Rectangle(16, 184, ScreenWidth - 32, 32), "REFRESH INFO") && !DragLock)
+            if (RayGui.GuiButton(RefreshRect, "REFRESH INFO") && !DragLock)
             {
                 PiShockAPI.UpdateShockerInfo();
             }
 
             // Shock button
-            if (RayGui.GuiButton(new Rectangle(16, 144, ScreenWidth - 32, 32), "SHOCK") && !DragLock)
+            if (RayGui.GuiButton(ShockRect, "SHOCK") && !DragLock)
             {
                 PiShockAPI.SendCommand(PiShockAPI.Intensity, PiShockAPI.Duration, PiShockAPI.CommandType.Shock);
             }
 
             // Vibrate button
-            if (RayGui.GuiButton(new Rectangle(16, 104, ScreenWidth - 32, 32), "VIBRATE") && !DragLock)
+            if (RayGui.GuiButton(VibrateRect, "VIBRATE") && !DragLock)
             {
                 PiShockAPI.SendCommand(PiShockAPI.Intensity, PiShockAPI.Duration, PiShockAPI.CommandType.Vibrate);
             }
 
             // Beep button
-            if (RayGui.GuiButton(new Rectangle(16, 64, ScreenWidth - 32, 32), "BEEP") && !DragLock)
+            if (RayGui.GuiButton(BeepRect, "BEEP") && !DragLock)
             {
                 PiShockAPI.SendCommand(PiShockAPI.Intensity, PiShockAPI.Duration, PiShockAPI.CommandType.Beep);
             }
@@ -302,7 +337,7 @@ namespace PiShockDesktop
             }
 
             // Draw the shocker information
-            Raylib.DrawRectangleLinesEx(new Rectangle(16, 268, ScreenWidth - 32, 114), 2, Raylib.GetColor(0x2F7486FF));
+            Raylib.DrawRectangleLinesEx(InfoRect, 2, Raylib.GetColor(0x2F7486FF));
             Raylib.DrawRectangle(18, 270, ScreenWidth - 36, 110, Raylib.GetColor(0x024658FF));
             Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 274, 20, Raylib.GOLD);
             Raylib.DrawText($"    ID: {PiShockAPI.ShockerInfo.ID}", 22, 294, 20, Raylib.GOLD);
