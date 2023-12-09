@@ -5,9 +5,9 @@ using Raylib_CsLo;
 namespace PiShockDesktop
 {
     /********** NOTE **********/
-    // Rivatuner Statistics Server (framerate counter) seems to cause memory leaks as well as an instant increase of about 20 MB of ram.
+    // Rivatuner Statistics Server (framerate counter) seems to cause memory leaks as well as a 20 MB increase in RAM usage.
     // I'm unsure why this happens, but I'm trying to find a fix. Fraps does not seem to have this issue as of right now.
-    // For now, I've using a timer to call the garbage collector untill I figure out what's going on, as there seems to be 
+    // For now, I've using a timer to call the garbage collector until I figure out what's going on, as there seems to be 
     // a memory leak somewhere else in my code.
 
     /* WARNING SUPRESSION */
@@ -123,7 +123,6 @@ namespace PiShockDesktop
                     MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "PiShock Desktop - Configuration Error", 16);
                 }
 
-                MessageBox(0, "The application will now close.", "PiShock Desktop", 64);
                 Environment.Exit(ex.HResult);
             }
 

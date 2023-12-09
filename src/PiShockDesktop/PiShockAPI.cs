@@ -229,11 +229,11 @@ namespace PiShockDesktop
                 default:
                     if (!string.IsNullOrEmpty(Result))
                     {
-                        Program.MessageBox(0, $"The PiShock API has sent an invalid response. Recieved data: {Result}", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nRecieved data: {Result}", "PiShock Desktop - Error", 16);
                     }
                     else
                     {
-                        Program.MessageBox(0, "The PiShock API did not respond. Make sure both you and the API are online.", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "The PiShock API did not respond.\n\nMake sure that:\n  1. Both you and the API are online\n  2. Your JSON configuration is valid", "PiShock Desktop - Error", 16);
                     }
                     
                     return false;
