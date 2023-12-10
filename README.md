@@ -3,6 +3,16 @@ A desktop application for controlling PiShock devices.
 
 For compilation instructions, look [here](https://github.com/MEMESCOEP/PiShockDesktop/blob/main/Build.md).<br/>For setup instructions, look [here](https://github.com/MEMESCOEP/PiShockDesktop/blob/main/Setup.md).
 
+Supported operating systems:
+| Operating System | Supported |
+| :---: | :---: |
+| Windows | ✅ |
+| MacOS | ❌ |
+| Linux | ❌ |
+
+> [!NOTE]
+> I do plan on adding Linux support, I just need to remove Windows libraries and dependencies.
+
 <br/>
 
 ## 🦺 A quick note about safety 🦺
