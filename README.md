@@ -8,7 +8,7 @@ For compilation instructions, look [here](https://github.com/MEMESCOEP/PiShockDe
 ## 🦺 A quick note about safety 🦺
 ***Discuss limits and boundaries before use!***
 
-Make yourself familiar with following guidelines and documentation outlined in the [PiShock Website](https://pishock.com/#/):
+Make yourself familiar with the following guidelines and documentation outlined in the [PiShock Website](https://pishock.com/#/):
 * Safety
 * Consent
 * Usage
