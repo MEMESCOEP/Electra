@@ -1,6 +1,6 @@
 ﻿using Raylib_CsLo;
 
-namespace PiShockDesktop
+namespace Electra
 {
     public class Timer
     {

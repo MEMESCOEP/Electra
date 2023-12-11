@@ -1,12 +1,12 @@
-# Building PiShockDesktop
+# Building Electra
 ## Requirements
-In order to build PiShock Desktop, you'll need the following:
+In order to build Electra, you'll need the following:
 * .NET 8 SDK
-* The PiShock Desktop source code
+* The Electra source code
 
 <br/>
 
-PiShock Desktop uses the following libraries:
+Electra uses the following libraries:
 * Raylib-CsLo
 * Newtonsoft.Json
 
@@ -22,4 +22,4 @@ Open the solution and Press either `F5` to compile & debug, or `CRTL+SHIFT+B` to
 <br/>
 
 ### Command Line
-Enter the porject directory and run `dotnet build` to compile. To run the compiled binary, change to the output directory and run `"PiShock Desktop.exe"`.
+Enter the porject directory and run `dotnet build` to compile. To run the compiled binary, change to the output directory and run `"Electra.exe"`.

@@ -1,23 +1,27 @@
 ﻿using System.Runtime.InteropServices;
+using DiscordRPC;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
+using SharpHook;
 
-namespace PiShockDesktop
+namespace Electra
 {
     /********** NOTE **********/
     // Rivatuner Statistics Server (framerate counter) seems to cause memory leaks as well as a 20 MB increase in RAM usage.
     // I'm unsure why this happens, but I'm trying to find a fix. Fraps does not seem to have this issue as of right now.
-    // For now, I've using a timer to call the garbage collector until I figure out what's going on, as there seems to be 
+    // For now, I'm using a timer to call the garbage collector until I figure out what's going on, as there seems to be 
     // a memory leak somewhere else in my code.
 
     /* WARNING SUPRESSION */
     // These are disabled because they piss me off (and they aren't a concern)
     #region WARNING SUPRESSION
-    #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-    #pragma warning disable CS8604 // Possible null reference argument.
-    #pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
     #endregion
 
+    /* CLASSES */
+    #region CLASSES
     internal class Program
     {
         /* VARIABLES */
@@ -39,7 +43,7 @@ namespace PiShockDesktop
         private static float DragOffsetY = 1f;
 
         // Points
-        private static System.Drawing.Point MousePos;
+        private static System.Drawing.Point MousePos = new System.Drawing.Point(0, 0);
 
         // Rectangles
         private static Rectangle IntensityRect = new Rectangle(16, 224, ScreenWidth - 72, 16);
@@ -71,19 +75,23 @@ namespace PiShockDesktop
 
         // Timers
         private static Timer GarbageCollectionTimer = new Timer(5, new Action(() => GC.Collect()));
+        private static Timer DiscordRPCUpdateTimer = new Timer(1, new Action(() => UpdateRPC()));
         private static Timer DragLockTimer = new Timer(0.1, new Action(() => RayGui.GuiUnlock()));
 
         // Strings
         private static string Logo128Path = @"Assets/Logo_128x128.png";
         private static string Logo32Path = @"Assets/Logo_32x32.png";
-        private static string ConfigPath = @"Assets/PiShockDesktopConfiguration.json";
+        private static string ConfigPath = @"Assets/ElectraConfig.json";
+
+        // Hooks
+        private static SimpleGlobalHook MouseHook = new SimpleGlobalHook();
+
+        // Discord RPC clients
+        private static DiscordRpcClient? RPCClient;
         #endregion
 
         /* DLL IMPORTS */
         #region DLL IMPORTS
-        [DllImport("User32.dll")]
-        private static extern bool GetCursorPos(ref System.Drawing.Point lpPoint);
-
         [DllImport("User32.dll", CharSet = CharSet.Unicode)]
         public static extern int MessageBox(IntPtr h, string m, string c, int type);
         #endregion
@@ -112,19 +120,29 @@ namespace PiShockDesktop
                 UseDraggingFPSLimit = ConfigData.SelectToken("UseDraggingFPSLimit").Value<bool>();
                 EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
 
+                // Set up the discord RPC client
+                RPCClient = new DiscordRpcClient(ConfigData["DiscordAppID"].ToString());
+                RPCClient.Initialize();
+
                 // Load images
                 TitlebarLogo = Raylib.LoadImage(Logo32Path);
                 TaskbarLogo = Raylib.LoadImage(Logo128Path);
             }
             catch (Exception ex)
             {
-                if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "PiShock Desktop - Configuration Error", 20) == 6)
+                if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "Electra - Configuration Error", 20) == 6)
                 {
-                    MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "PiShock Desktop - Configuration Error", 16);
+                    MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "Electra - Configuration Error", 16);
                 }
 
+                DiscordRPCUpdateTimer.Stop();
+                RPCClient.Dispose();
                 Environment.Exit(ex.HResult);
             }
+
+            // Assign the mouse hook events
+            MouseHook.MouseMoved += OnMouseMoved;
+            MouseHook.MouseDragged += OnMouseMoved;
 
             // Set the window flags
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
@@ -136,7 +154,7 @@ namespace PiShockDesktop
             }
 
             // Create a window and set it's icon
-            Raylib.InitWindow(ScreenWidth, ScreenHeight, "PiShock Desktop");
+            Raylib.InitWindow(ScreenWidth, ScreenHeight, "Electra");
             Raylib.SetWindowIcon(TaskbarLogo);
 
             // Set the style manually because raylib doesn't seem to want to load a style from the disk properly >:(
@@ -186,17 +204,17 @@ namespace PiShockDesktop
             GarbageCollectionTimer.Recurring = true;
             GarbageCollectionTimer.Start();
 
+            DiscordRPCUpdateTimer.Recurring = true;
+            DiscordRPCUpdateTimer.Start();
+
+            // Start the mouse hook asynchronously
+            MouseHook.RunAsync();
+
             // Main loop
             while (!ExitProgram && !Raylib.WindowShouldClose())
             {
                 // Start drawing
                 Raylib.BeginDrawing();
-
-                // Get the screen space mouse position (the non-relative position on the screen in pixels)
-                if(Raylib.GetMouseDelta() != System.Numerics.Vector2.Zero)
-                {
-                    GetCursorPos(ref MousePos);
-                }
 
                 // Check if the user is dragging the window
                 if (!DragLock && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), DragRect) && Raylib.IsWindowFocused() && Raylib.IsMouseButtonPressed(0))
@@ -240,6 +258,7 @@ namespace PiShockDesktop
 
                 // Update timers
                 GarbageCollectionTimer.Update();
+                DiscordRPCUpdateTimer.Update();
                 DragLockTimer.Update();
 
                 // Draw window elements
@@ -247,13 +266,6 @@ namespace PiShockDesktop
 
                 // Stop drawing
                 Raylib.EndDrawing();
-
-                // If the garbage collection timer has finished running, reset it
-                /*if (GarbageCollectionTimer.TimerDone())
-                {
-                    MessageBox(0, "GC called", "DFJKHJSDF", 64);
-                    GarbageCollectionTimer.Start();
-                }*/
             }
 
             // Unload assets to prevent memory leaks and file errors
@@ -262,7 +274,10 @@ namespace PiShockDesktop
             Raylib.UnloadTexture(TitlebarLogoTexture);
 
             // Exit the application
+            DiscordRPCUpdateTimer.Stop();
+            RPCClient.Dispose();
             Raylib.CloseWindow();
+            Environment.Exit(0);
         }
 
         // Draw UI elements
@@ -273,8 +288,8 @@ namespace PiShockDesktop
             Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
 
             // Get the intensity and duration from the sliders
-            PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 0, PiShockAPI.MaxIntensity);
-            PiShockAPI.Duration = (int)RayGui.GuiSlider(DurationRect, null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 0, PiShockAPI.MaxDuration);
+            PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 1, PiShockAPI.MaxIntensity);
+            PiShockAPI.Duration = (int)RayGui.GuiSlider(DurationRect, null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 1, PiShockAPI.MaxDuration);
 
             // Draw and process buttons
             // Refresh information button
@@ -345,7 +360,7 @@ namespace PiShockDesktop
             Raylib.DrawText($"    Share code: {PiShockAPI.APIConfig.Code}", 22, 354, 20, Raylib.GOLD);
 
             // Draw the titlebar decorations
-            Raylib.DrawText("PiShock Desktop", 40, 14, 20, Raylib.GOLD);
+            Raylib.DrawText("Electra", 40, 14, 20, Raylib.GOLD);
             Raylib.DrawTexture(TitlebarLogoTexture, 6, 6, Raylib.WHITE);
             Raylib.DrawRectangle(418, 16, 16, 16, Raylib.RED);
             Raylib.DrawText("x", 421, 13, 20, Raylib.WHITE);
@@ -354,6 +369,30 @@ namespace PiShockDesktop
             // Draw the window border
             Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, BorderColor);
         }
+
+        // Get the screen space mouse position when the mouse has been moved (the non-relative position on the screen in pixels)
+        private static void OnMouseMoved(object? sender, MouseHookEventArgs e)
+        {
+            MousePos.X = e.Data.X;
+            MousePos.Y = e.Data.Y;
+        }
+
+        // Set the Discord RPC data
+        private static void UpdateRPC()
+        {
+            RPCClient.SetPresence(new RichPresence()
+            {
+                Details = PiShockAPI.ShockerInfo.Name,
+                State = $"Intensity: {PiShockAPI.Intensity} || Duration: {PiShockAPI.Duration}",
+                Assets = new Assets()
+                {
+                    LargeImageKey = "https://pishock.com/statics/icons/favicon-128x128.png",
+                    LargeImageText = "PiShock Logo",
+                    SmallImageKey = "https://pishock.com/statics/icons/favicon-64x64.png"
+                }
+            });
+        }
         #endregion
     }
+    #endregion
 }

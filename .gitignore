@@ -396,4 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-src/PiShockDesktop/Resources/PiShockDesktopConfigurationTesting.json
+
+# Misc
+src/Electra/Resources/ElectraConfigTesting.json

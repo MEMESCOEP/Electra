@@ -1,7 +1,7 @@
-# ⚡PiShock Desktop⚡
+# ⚡Electra⚡
 A desktop application for controlling PiShock devices.
 
-For compilation instructions, look [here](https://github.com/MEMESCOEP/PiShockDesktop/blob/main/Build.md).<br/>For setup instructions, look [here](https://github.com/MEMESCOEP/PiShockDesktop/blob/main/Setup.md).
+For compilation instructions, look [here](https://github.com/MEMESCOEP/Electra/blob/main/Build.md).<br/>For setup instructions, look [here](https://github.com/MEMESCOEP/Electra/blob/main/Setup.md).
 
 Supported operating systems:
 | Operating System | Supported |

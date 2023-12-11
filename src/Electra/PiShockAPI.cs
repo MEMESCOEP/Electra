@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text;
 using Raylib_CsLo;
 
-namespace PiShockDesktop
+namespace Electra
 {
     /* WARNING SUPRESSION */
     // These are disabled because they piss me off (and they aren't a concern)
@@ -119,7 +119,7 @@ namespace PiShockDesktop
             }
             catch(Exception ex)
             {
-                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "PiShock Desktop - Error", 16);
+                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "Electra - Error", 16);
             }
 
             // Set the mouse cursor
@@ -167,7 +167,7 @@ namespace PiShockDesktop
             }
             catch (Exception ex)
             {
-                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "PiShock Desktop - Error", 16);
+                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "Electra - Error", 16);
             }
 
             // Set the mouse cursor
@@ -187,39 +187,39 @@ namespace PiShockDesktop
             switch (Result)
             {
                 case "This code doesn't exist.":
-                    Program.MessageBox(0, $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", "Electra - Error", 16);
                     return false;
 
                 case "Not Authorized.":
-                    Program.MessageBox(0, "The username or API key is incorrect, or your account hasn't been activated yet.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, "The username or API key is incorrect, or your account hasn't been activated yet.", "Electra - Error", 16);
                     return false;
 
                 case "Shocker is Paused or does not exist. Unpause to send command.":
-                    Program.MessageBox(0, "This shocker is currently paused, or does not exist.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, "This shocker is currently paused, or does not exist.", "Electra - Error", 16);
                     return false;
 
                 case "Device currently not connected.":
-                    Program.MessageBox(0, "The hub is not connected.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, "The hub is not connected.", "Electra - Error", 16);
                     return false;
 
                 case "This share code has already been used by somebody else.":
-                    Program.MessageBox(0, $"The share code \"{PiShockAPI.APIConfig.Code}\" is already in use.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, $"The share code \"{PiShockAPI.APIConfig.Code}\" is already in use.", "Electra - Error", 16);
                     return false;
 
                 case "Unknown Op, use 0 for shock, 1 for vibrate and 2 for beep.":
-                    Program.MessageBox(0, $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", "Electra - Error", 16);
                     return false;
 
                 case "Beep not allowed.":
-                    Program.MessageBox(0, "Beeping has been disabled for this share code.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, "Beeping has been disabled for this share code.", "Electra - Error", 16);
                     return false;
 
                 case "Shock not allowed.":
-                    Program.MessageBox(0, "Shocking has been disabled for this share code.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, "Shocking has been disabled for this share code.", "Electra - Error", 16);
                     return false;
 
                 case "Vibrate not allowed.":
-                    Program.MessageBox(0, "Vibrating has been disabled for this share code.", "PiShock Desktop - Error", 16);
+                    Program.MessageBox(0, "Vibrating has been disabled for this share code.", "Electra - Error", 16);
                     return false;
 
                 case "Operation Succeeded.":
@@ -229,11 +229,11 @@ namespace PiShockDesktop
                 default:
                     if (!string.IsNullOrEmpty(Result))
                     {
-                        Program.MessageBox(0, $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nRecieved data: {Result}", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nRecieved data: {Result}", "Electra - Error", 16);
                     }
                     else
                     {
-                        Program.MessageBox(0, "The PiShock API did not respond.\n\nMake sure that:\n  1. Both you and the API are online\n  2. Your JSON configuration is valid", "PiShock Desktop - Error", 16);
+                        Program.MessageBox(0, "The PiShock API did not respond.\n\nMake sure that:\n  1. Both you and the API are online\n  2. Your JSON configuration is valid", "Electra - Error", 16);
                     }
                     
                     return false;

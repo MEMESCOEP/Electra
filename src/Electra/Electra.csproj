@@ -7,9 +7,9 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
     <PackageIcon>Logo_128x128.png</PackageIcon>
-    <Title>PiShock Desktop</Title>
+    <Title>Electra</Title>
     <StartupObject></StartupObject>
-    <AssemblyName>PiShock Desktop</AssemblyName>
+    <AssemblyName>Electra</AssemblyName>
     <ApplicationIcon>Resources\Logo_128x128.ico</ApplicationIcon>
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
@@ -25,8 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="DiscordRichPresence" Version="1.2.1.24" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Raylib-CsLo" Version="4.2.0.9" />
+    <PackageReference Include="SharpHook" Version="5.1.2" />
+    <PackageReference Include="SharpHook.Reactive" Version="5.1.2" />
   </ItemGroup>
 
   <ItemGroup>
