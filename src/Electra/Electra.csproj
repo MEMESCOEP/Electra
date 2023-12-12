@@ -10,7 +10,7 @@
     <Title>Electra</Title>
     <StartupObject></StartupObject>
     <AssemblyName>Electra</AssemblyName>
-    <ApplicationIcon>Resources\Logo_128x128.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\Logo_32x32.ico</ApplicationIcon>
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
 
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Resources\Logo_128x128.ico" />
+    <Content Include="Resources\Logo_32x32.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +30,7 @@
     <PackageReference Include="Raylib-CsLo" Version="4.2.0.9" />
     <PackageReference Include="SharpHook" Version="5.1.2" />
     <PackageReference Include="SharpHook.Reactive" Version="5.1.2" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

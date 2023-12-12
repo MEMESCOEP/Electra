@@ -7,5 +7,6 @@
   "APIKey": "Key",
   "UseStationaryFPSLimit": true,
   "UseDraggingFPSLimit": true,
+  "EnableDiscordRPC": true,
   "EnableVSync": true
 }

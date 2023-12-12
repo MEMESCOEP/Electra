@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
-using DiscordRPC;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
+using DiscordRPC;
 using SharpHook;
 
 namespace Electra
@@ -30,6 +30,7 @@ namespace Electra
         private static bool UseStationaryFPSLimit = true;
         private static bool UseDraggingFPSLimit = true;
         private static bool EnableVerticalSync = true;
+        private static bool EnableDiscordRPC = false;
         private static bool ExitProgram = false;
         private static bool DragLock = false;
 
@@ -41,6 +42,9 @@ namespace Electra
         // Floats
         private static float DragOffsetX = 1f;
         private static float DragOffsetY = 1f;
+
+        // Lists
+        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync" };
 
         // Points
         private static System.Drawing.Point MousePos = new System.Drawing.Point(0, 0);
@@ -112,6 +116,15 @@ namespace Electra
                 JObject ConfigData = JObject.Parse(File.ReadAllText(ConfigPath));
                 JArray ShareCodeArray = (JArray)ConfigData["ShareCodes"];
 
+                // Make sure our configuration has all the required keys
+                foreach (var JSONKey in ConfigKeys)
+                {
+                    if (!ConfigData.ContainsKey(JSONKey))
+                    {
+                        throw new Exception($"Your configuration is invalid because it's missing the \"{JSONKey}\" key.");
+                    }
+                }
+
                 // Configure the PiShock API
                 PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
 
@@ -119,6 +132,7 @@ namespace Electra
                 UseStationaryFPSLimit = ConfigData.SelectToken("UseStationaryFPSLimit").Value<bool>();
                 UseDraggingFPSLimit = ConfigData.SelectToken("UseDraggingFPSLimit").Value<bool>();
                 EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
+                EnableDiscordRPC = ConfigData.SelectToken("EnableDiscordRPC").Value<bool>();
 
                 // Set up the discord RPC client
                 RPCClient = new DiscordRpcClient(ConfigData["DiscordAppID"].ToString());
@@ -136,7 +150,12 @@ namespace Electra
                 }
 
                 DiscordRPCUpdateTimer.Stop();
-                RPCClient.Dispose();
+
+                if(RPCClient != null)
+                {
+                    RPCClient.Dispose();
+                }
+
                 Environment.Exit(ex.HResult);
             }
 
@@ -204,8 +223,11 @@ namespace Electra
             GarbageCollectionTimer.Recurring = true;
             GarbageCollectionTimer.Start();
 
-            DiscordRPCUpdateTimer.Recurring = true;
-            DiscordRPCUpdateTimer.Start();
+            if (EnableDiscordRPC)
+            {
+                DiscordRPCUpdateTimer.Recurring = true;
+                DiscordRPCUpdateTimer.Start();
+            }                
 
             // Start the mouse hook asynchronously
             MouseHook.RunAsync();
@@ -275,7 +297,13 @@ namespace Electra
 
             // Exit the application
             DiscordRPCUpdateTimer.Stop();
-            RPCClient.Dispose();
+
+            if (RPCClient != null)
+            {
+                RPCClient.Dispose();
+            }
+
+            MouseHook.Dispose();
             Raylib.CloseWindow();
             Environment.Exit(0);
         }
@@ -388,7 +416,7 @@ namespace Electra
                 {
                     LargeImageKey = "https://pishock.com/statics/icons/favicon-128x128.png",
                     LargeImageText = "PiShock Logo",
-                    SmallImageKey = "https://pishock.com/statics/icons/favicon-64x64.png"
+                    SmallImageKey = "https://pishock.com/statics/icons/favicon-32x32.png"
                 }
             });
         }

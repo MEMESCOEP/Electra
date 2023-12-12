@@ -7,8 +7,10 @@ In order to build Electra, you'll need the following:
 <br/>
 
 Electra uses the following libraries:
-* Raylib-CsLo
 * Newtonsoft.Json
+* Raylib-CsLo
+* Discord RPC
+* SharpHook
 
 <br/>
 
