@@ -4,6 +4,8 @@ using Raylib_CsLo;
 using DiscordRPC;
 using SharpHook;
 using System.IO.Ports;
+using System.Management;
+using System.Diagnostics;
 
 namespace Electra
 {
@@ -96,8 +98,10 @@ namespace Electra
         private static DiscordRpcClient? RPCClient;
 
         // Serial ports
-        private static SerialPort SP = new SerialPort("COM8", 115200, Parity.None, 8, StopBits.One);
+        private static SerialPort? SP;
 
+        // Tuples
+        private static List<(int, int)> USB_SERIAL_IDS = new List<(int, int)>() { (0x1A86, 0x7523), (0x1A86, 0x55D4) };  // CH340 = PiShock Next; CH9102 = PiShock Lite
         #endregion
 
         /* DLL IMPORTS */
@@ -142,13 +146,45 @@ namespace Electra
 
                 if (EnableSerial)
                 {
-                    // {"cmd": "info"}
+                    foreach (var device in Serial.GetPortNameFromVIDPID(USB_SERIAL_IDS[0].Item1.ToString(), USB_SERIAL_IDS[0].Item2.ToString()))
+                    {
+                        MessageBox(0, device, "", 0);
+                    }
+
+                    ProcessStartInfo PyScript = new ProcessStartInfo();
+
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        PyScript.FileName = "python";
+                    }
+                    else
+                    {
+                        PyScript.FileName = "python3";
+                    }
+
+                    PyScript.Arguments = "VIDPIDToSerialName.py";
+                    PyScript.UseShellExecute = false;
+                    PyScript.CreateNoWindow = true;
+                    PyScript.RedirectStandardOutput = true;
+
+                    Process process = new Process();
+                    process.StartInfo = PyScript;
+                    process.StartInfo.RedirectStandardOutput = true;
+                    process.Start();
+
+                    StreamReader myStreamReader = process.StandardOutput;
+                    string str = myStreamReader.ReadLine();
+                    process.WaitForExit();
+                    process.Close();
+
+                    MessageBox(0, str, "bruh", 0);
+
+                    SP = new SerialPort("COM8", 115200, Parity.None, 8, StopBits.One);
                     SP.Handshake = Handshake.None;
                     SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
                     SP.WriteTimeout = 500;
                     SP.Open();
                     SP.Write("{\"cmd\": \"info\"}");
-                    //SP.Close();
                 }
 
                 // Set up the discord RPC client
@@ -171,6 +207,11 @@ namespace Electra
                 if(RPCClient != null)
                 {
                     RPCClient.Dispose();
+                }
+
+                if (SP.IsOpen)
+                {
+                    SP.Close();
                 }
 
                 Environment.Exit(ex.HResult);
@@ -318,6 +359,11 @@ namespace Electra
             if (RPCClient != null)
             {
                 RPCClient.Dispose();
+            }
+
+            if (SP.IsOpen)
+            {
+                SP.Close();
             }
 
             MouseHook.Dispose();
