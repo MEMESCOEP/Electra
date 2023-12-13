@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using DiscordRPC;
 using SharpHook;
+using System.IO.Ports;
 
 namespace Electra
 {
@@ -31,6 +32,7 @@ namespace Electra
         private static bool UseDraggingFPSLimit = true;
         private static bool EnableVerticalSync = true;
         private static bool EnableDiscordRPC = false;
+        private static bool EnableSerial = true;
         private static bool ExitProgram = false;
         private static bool DragLock = false;
 
@@ -92,6 +94,10 @@ namespace Electra
 
         // Discord RPC clients
         private static DiscordRpcClient? RPCClient;
+
+        // Serial ports
+        private static SerialPort SP = new SerialPort("COM8", 115200, Parity.None, 8, StopBits.One);
+
         #endregion
 
         /* DLL IMPORTS */
@@ -133,6 +139,17 @@ namespace Electra
                 UseDraggingFPSLimit = ConfigData.SelectToken("UseDraggingFPSLimit").Value<bool>();
                 EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
                 EnableDiscordRPC = ConfigData.SelectToken("EnableDiscordRPC").Value<bool>();
+
+                if (EnableSerial)
+                {
+                    // {"cmd": "info"}
+                    SP.Handshake = Handshake.None;
+                    SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
+                    SP.WriteTimeout = 500;
+                    SP.Open();
+                    SP.Write("{\"cmd\": \"info\"}");
+                    //SP.Close();
+                }
 
                 // Set up the discord RPC client
                 RPCClient = new DiscordRpcClient(ConfigData["DiscordAppID"].ToString());
@@ -419,6 +436,18 @@ namespace Electra
                     SmallImageKey = "https://pishock.com/statics/icons/favicon-32x32.png"
                 }
             });
+        }
+
+        // Get serial data from the hub
+        private static void SerialDataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            Thread.Sleep(50);
+            string data = SP.ReadLine();
+
+            if (data.StartsWith("TERMINALINFO"))
+            {
+                MessageBox(0, data, "Serial Optput", 0);
+            }
         }
         #endregion
     }
