@@ -202,7 +202,7 @@ namespace Electra
                     RPCClient.Dispose();
                 }
 
-                if (SP.IsOpen)
+                if (SP != null && SP.IsOpen)
                 {
                     SP.Close();
                 }
@@ -354,7 +354,7 @@ namespace Electra
                 RPCClient.Dispose();
             }
 
-            if (SP.IsOpen)
+            if (SP != null && SP.IsOpen)
             {
                 SP.Close();
             }

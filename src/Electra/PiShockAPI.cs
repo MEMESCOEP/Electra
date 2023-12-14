@@ -27,7 +27,7 @@ namespace Electra
 
     public class PiShockShockerInfo
     {
-        public string? Name { get; set; } = "NO CONFIG";
+        public string? Name { get; set; } = "NO SHOCKER INFO";
         public bool? IsPaused { get; set; } = false;
         public bool? IsOnline { get; set; } = false;
         public float? MaxIntensity { get; set; } = 0f;

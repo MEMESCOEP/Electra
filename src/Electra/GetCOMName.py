@@ -14,4 +14,4 @@ USB_SERIAL_IDS = [
 ## MAIN CODE ##
 for info in serial.tools.list_ports.comports():
     if (info.vid, info.pid) in USB_SERIAL_IDS:
-        print(f"{info.device}")
+        print(info.device)
