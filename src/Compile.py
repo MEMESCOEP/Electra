@@ -6,9 +6,12 @@ from rich.panel import Panel
 import rich.table
 import subprocess
 import traceback
+import platform
+import shutil
+import os
 
 ## VARIABLES ##
-OutputTable = rich.table.Table(show_header=False)
+OutputPath = "./Electra/bin/Debug/net8.0/"
 
 ## FUNCTIONS ##
 def BuildFailure(ReturnCode):
@@ -24,23 +27,41 @@ def StartProcess(Process):
     
     if ReturnCode != 0:
         BuildFailure(ReturnCode)
-    
 
 ## MAIN CODE ##
 try:
+    # Compile the DOTNET portion of Electra
     rprint(Panel.fit("[blue]🔧 COMPILING DOTNET 🔧[/blue]", style="bold"))
     StartProcess("dotnet build")
 
+    # Compile the python portion of Electra
     print("\n\n")
     rprint(Panel.fit("[blue]🔧 COMPILING PYTHON 🔧[/blue]", style="bold"))
-    StartProcess("pyinstaller --onefile ./Electra/GetCOMName.py")
+    if platform.system() == "Windows":
+        StartProcess("pyinstaller --onefile ./Electra/GetCOMName.py")
 
+    else:
+        StartProcess("python3 -m PyInstaller --onefile ./Electra/GetCOMName.py")
+
+    # Do some cleanup (move the binary, delete temp files & dirs)
     print("\n\n")
-    rprint(Panel.fit("[blue]🔧 CLEANING UP 🔧[/blue]", style="bold"))
-    #StartProcess("move ./dist/GetCOMName.exe ./Electra/bin/debug/net8.0/GetCOMName.exe")
-    StartProcess("rmdir /Q /s build")
-    StartProcess("rmdir /Q /s dist")
-    StartProcess("del /Q GetCOMName.spec")
+    rprint(Panel.fit("[blue]✨ CLEANING UP ✨[/blue]", style="bold"))
+
+    # Find the compiled python binary
+    File = list(filter(lambda x: 'GetCOMName' in x, os.listdir("./dist/")))
+
+    # Move the binary to the debug folder
+    if len(File) > 0:
+        print("[INFO} >> Moving compiled binary to debug folder...")
+        shutil.move(os.path.join("./dist/", File[0]), os.path.join(OutputPath, "GetCOMName.pye"))
+
+    else:
+        raise Exception("Could not find the compiled python binary!")
+
+    print("[INFO} >> Removing temporary directories and files...")
+    shutil.rmtree("./build")
+    shutil.rmtree("./dist")
+    os.remove("./GetCOMName.spec")
 
     print("\n\n")
     rprint(Panel.fit("[green]✅ BUILD SUCCEEDED ✅[/green]", style="bold"))

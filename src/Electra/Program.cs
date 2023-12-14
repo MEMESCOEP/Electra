@@ -144,47 +144,40 @@ namespace Electra
                 EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
                 EnableDiscordRPC = ConfigData.SelectToken("EnableDiscordRPC").Value<bool>();
 
+                // Find the COM port of the PiShock hub if serial is enabled
                 if (EnableSerial)
                 {
-                    foreach (var device in Serial.GetPortNameFromVIDPID(USB_SERIAL_IDS[0].Item1.ToString(), USB_SERIAL_IDS[0].Item2.ToString()))
-                    {
-                        MessageBox(0, device, "", 0);
-                    }
-
                     ProcessStartInfo PyScript = new ProcessStartInfo();
 
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        PyScript.FileName = "python";
-                    }
-                    else
-                    {
-                        PyScript.FileName = "python3";
-                    }
-
-                    PyScript.Arguments = "VIDPIDToSerialName.py";
+                    // Set the execution properties for the process
+                    PyScript.FileName = "GetCOMName.pye";
                     PyScript.UseShellExecute = false;
                     PyScript.CreateNoWindow = true;
                     PyScript.RedirectStandardOutput = true;
 
-                    Process process = new Process();
-                    process.StartInfo = PyScript;
-                    process.StartInfo.RedirectStandardOutput = true;
-                    process.Start();
+                    Process COMProcess = new Process();
+                    COMProcess.StartInfo = PyScript;
+                    COMProcess.StartInfo.RedirectStandardOutput = true;
+                    COMProcess.Start();
 
-                    StreamReader myStreamReader = process.StandardOutput;
-                    string str = myStreamReader.ReadLine();
-                    process.WaitForExit();
-                    process.Close();
+                    StreamReader SR = COMProcess.StandardOutput;
+                    string COMPort = SR.ReadLine();
+                    COMProcess.WaitForExit();
+                    COMProcess.Close();
 
-                    MessageBox(0, str, "bruh", 0);
-
-                    SP = new SerialPort("COM8", 115200, Parity.None, 8, StopBits.One);
-                    SP.Handshake = Handshake.None;
-                    SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
-                    SP.WriteTimeout = 500;
-                    SP.Open();
-                    SP.Write("{\"cmd\": \"info\"}");
+                    if(!string.IsNullOrEmpty(COMPort))
+                    {
+                        SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
+                        SP.Handshake = Handshake.None;
+                        SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
+                        SP.WriteTimeout = 500;
+                        SP.Open();
+                        SP.Write("{\"cmd\": \"info\"}");
+                    }
+                    else
+                    {
+                        MessageBox(0, "Failed to find the hub,", "Electra - Error", 16);
+                    }
                 }
 
                 // Set up the discord RPC client

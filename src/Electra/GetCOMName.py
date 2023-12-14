@@ -11,10 +11,7 @@ USB_SERIAL_IDS = [
     (0x1A86, 0x55D4),  # CH9102, PiShock Lite
 ]
 
-def GetCOMPortName():
-    for info in serial.tools.list_ports.comports():
-        if (info.vid, info.pid) in USB_SERIAL_IDS:
-            return f"{info.device}, {info.vid}, {info.pid}"
-
-if __name__ == '__main__':
-    print(GetCOMPortName())
+## MAIN CODE ##
+for info in serial.tools.list_ports.comports():
+    if (info.vid, info.pid) in USB_SERIAL_IDS:
+        print(f"{info.device}")
