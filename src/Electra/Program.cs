@@ -34,9 +34,9 @@ namespace Electra
         private static bool UseDraggingFPSLimit = true;
         private static bool EnableVerticalSync = true;
         private static bool EnableDiscordRPC = false;
-        private static bool EnableSerial = true;
         private static bool ExitProgram = false;
         private static bool DragLock = false;
+        public static bool EnableSerial = true;
 
         // Integers
         private static int DragSleepTime = 0;
@@ -48,7 +48,7 @@ namespace Electra
         private static float DragOffsetY = 1f;
 
         // Lists
-        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync" };
+        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync", "EnableSerial" };
 
         // Points
         private static System.Drawing.Point MousePos = new System.Drawing.Point(0, 0);
@@ -98,7 +98,7 @@ namespace Electra
         private static DiscordRpcClient? RPCClient;
 
         // Serial ports
-        private static SerialPort? SP;
+        public static SerialPort? SP;
 
         // Tuples
         private static List<(int, int)> USB_SERIAL_IDS = new List<(int, int)>() { (0x1A86, 0x7523), (0x1A86, 0x55D4) };  // CH340 = PiShock Next; CH9102 = PiShock Lite
@@ -135,50 +135,12 @@ namespace Electra
                     }
                 }
 
-                // Configure the PiShock API
-                PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
-
                 // Enable/Disable VSync and apply FPS limits if required
                 UseStationaryFPSLimit = ConfigData.SelectToken("UseStationaryFPSLimit").Value<bool>();
                 UseDraggingFPSLimit = ConfigData.SelectToken("UseDraggingFPSLimit").Value<bool>();
                 EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
                 EnableDiscordRPC = ConfigData.SelectToken("EnableDiscordRPC").Value<bool>();
-
-                // Find the COM port of the PiShock hub if serial is enabled
-                if (EnableSerial)
-                {
-                    ProcessStartInfo PyScript = new ProcessStartInfo();
-
-                    // Set the execution properties for the process
-                    PyScript.FileName = "GetCOMName.pye";
-                    PyScript.UseShellExecute = false;
-                    PyScript.CreateNoWindow = true;
-                    PyScript.RedirectStandardOutput = true;
-
-                    Process COMProcess = new Process();
-                    COMProcess.StartInfo = PyScript;
-                    COMProcess.StartInfo.RedirectStandardOutput = true;
-                    COMProcess.Start();
-
-                    StreamReader SR = COMProcess.StandardOutput;
-                    string COMPort = SR.ReadLine();
-                    COMProcess.WaitForExit();
-                    COMProcess.Close();
-
-                    if(!string.IsNullOrEmpty(COMPort))
-                    {
-                        SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
-                        SP.Handshake = Handshake.None;
-                        SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
-                        SP.WriteTimeout = 500;
-                        SP.Open();
-                        SP.Write("{\"cmd\": \"info\"}");
-                    }
-                    else
-                    {
-                        MessageBox(0, "Failed to find the hub,", "Electra - Error", 16);
-                    }
-                }
+                EnableSerial = ConfigData.SelectToken("EnableSerial").Value<bool>();
 
                 // Set up the discord RPC client
                 RPCClient = new DiscordRpcClient(ConfigData["DiscordAppID"].ToString());
@@ -187,6 +149,12 @@ namespace Electra
                 // Load images
                 TitlebarLogo = Raylib.LoadImage(Logo32Path);
                 TaskbarLogo = Raylib.LoadImage(Logo128Path);
+
+                // Configure the PiShock API if serial is not enabled
+                if (!EnableSerial)
+                {
+                    PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
+                }
             }
             catch (Exception ex)
             {
@@ -210,9 +178,69 @@ namespace Electra
                 Environment.Exit(ex.HResult);
             }
 
+            // Find the COM port of the PiShock hub if serial is enabled
+            try
+            {                
+                if (EnableSerial)
+                {
+                    ProcessStartInfo PyScript = new ProcessStartInfo();
+
+                    // Set the execution properties for the process
+                    PyScript.FileName = "GetCOMName.pye";
+                    PyScript.UseShellExecute = false;
+                    PyScript.CreateNoWindow = true;
+                    PyScript.RedirectStandardOutput = true;
+
+                    Process COMProcess = new Process();
+                    COMProcess.StartInfo = PyScript;
+                    COMProcess.StartInfo.RedirectStandardOutput = true;
+                    COMProcess.Start();
+
+                    StreamReader SR = COMProcess.StandardOutput;
+                    string COMPort = SR.ReadLine();
+                    COMProcess.WaitForExit();
+                    COMProcess.Close();
+
+                    if (string.IsNullOrEmpty(COMPort))
+                    {
+                        throw new Exception("Failed to find the hub.");
+                    }
+
+                    SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
+                    SP.Handshake = Handshake.None;
+                    SP.DtrEnable = false;
+                    SP.RtsEnable = false;
+                    SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
+                    SP.WriteTimeout = 500;
+                    SP.Open();
+                    Serial.SendCommand(ShockerOperations.Shock, 1, 1000, 8669);
+                }
+            }
+            catch(Exception ex)
+            {
+                if (MessageBox(0, "Serial hub autodetection failed.\n\nWould you like to view extra error information?", "Electra - Serial Error", 20) == 6)
+                {
+                    MessageBox(0, $"Error: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Serial Error", 16);
+                }
+
+                DiscordRPCUpdateTimer.Stop();
+
+                if (RPCClient != null)
+                {
+                    RPCClient.Dispose();
+                }
+
+                if (SP != null && SP.IsOpen)
+                {
+                    SP.Close();
+                }
+
+                Environment.Exit(ex.HResult);
+            }
+
             // Assign the mouse hook events
-            MouseHook.MouseMoved += OnMouseMoved;
             MouseHook.MouseDragged += OnMouseMoved;
+            MouseHook.MouseMoved += OnMouseMoved;
 
             // Set the window flags
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
@@ -483,9 +511,13 @@ namespace Electra
             Thread.Sleep(50);
             string data = SP.ReadLine();
 
-            if (data.StartsWith("TERMINALINFO"))
+            var file = File.CreateText("honse.txt");
+            file.Write(data);
+            file.Close();
+
+            if (data.StartsWith("TERMINALINFO:"))
             {
-                MessageBox(0, data, "Serial Optput", 0);
+                MessageBox(0, data, "Serial Output", 0);
             }
         }
         #endregion

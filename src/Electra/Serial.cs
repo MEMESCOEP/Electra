@@ -1,46 +1,61 @@
-﻿using Microsoft.Win32;
-using System.Text.RegularExpressions;
-
-namespace Electra
+﻿namespace Electra
 {
     /* WARNING SUPRESSION */
     // These are disabled because they piss me off (and they aren't a concern)
     #region WARNING SUPRESSION
-    #pragma warning disable CA1416 // Validate platform compatibility
-    #pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
-    #pragma warning disable CS8602 // Dereference of a possibly null reference.
-    #pragma warning disable CS8604 // Possible null reference argument.
+#pragma warning disable CA1416 // Validate platform compatibility
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+#pragma warning disable CS8604 // Possible null reference argument.
     #endregion
+
+    /* CLASSES */
+    #region CLASSES
+    public static class ShockerOperations
+    {
+        public const string Shock = "shock";
+        public const string Vibrate = "vibrate";
+        public const string Beep = "beep";
+    }
 
     public class Serial
     {
-        public static List<string> GetPortNameFromVIDPID(String VID, String PID)
+        /* FUNCTIONS */
+        #region FUNCTIONS
+        /// <summary>
+        /// This function sends a JSON-formatted command string to the serial port where the hub is connected.
+        /// </summary>
+        /// <param name="Operation">The operation the shocker should perform. This should be one of the values defined in the ShockerOperations class.</param>
+        /// <param name="Intensity">The intensity the shocker should use when performing an operation. This should be an integer between 1 and 100 (power percentage), and does not apply to beeping.</param>
+        /// <param name="Duration">The duration in milliseconds of the operation that the shocker will perform.</param>
+        /// <param name="ShockerID">the ID of the shocker.</param>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
+        public static void SendCommand(string Operation, int Intensity, UInt32 Duration, int ShockerID)
         {
-            String pattern = String.Format("^VID_{0}.PID_{1}", VID, PID);
-            Regex _rx = new Regex(pattern, RegexOptions.IgnoreCase);
-            List<string> comports = new List<string>();
-            RegistryKey rk1 = Registry.LocalMachine;
-            RegistryKey rk2 = rk1.OpenSubKey("SYSTEM\\CurrentControlSet\\Enum");
-
-            foreach (String s3 in rk2.GetSubKeyNames())
+            if (Intensity < 1 && Intensity > 100)
             {
-                RegistryKey rk3 = rk2.OpenSubKey(s3);
-                foreach (String s in rk3.GetSubKeyNames())
-                {
-                    if (_rx.Match(s).Success)
-                    {
-                        RegistryKey rk4 = rk3.OpenSubKey(s);
-                        foreach (String s2 in rk4.GetSubKeyNames())
-                        {
-                            RegistryKey rk5 = rk4.OpenSubKey(s2);
-                            RegistryKey rk6 = rk5.OpenSubKey("Device Parameters");
-                            comports.Add((string)rk6.GetValue("PortName"));
-                        }
-                    }
-                }
+                throw new ArgumentOutOfRangeException("Intensity must be between 1 and 100!");
             }
 
-            return comports;
+            if(Duration < 1 && Duration > UInt32.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException($"Duration must be between 1 and {UInt32.MaxValue}!");
+            }
+
+            if (!Operation.Equals(ShockerOperations.Shock) && !Operation.Equals(ShockerOperations.Vibrate) && !Operation.Equals(ShockerOperations.Beep))
+            {
+                throw new InvalidOperationException($"The operation \"{Operation}\" is invalid!");
+            }
+
+            if (!Program.SP.IsOpen)
+            {
+                throw new Exception("The serial port is not open!");
+            }
+
+            Program.SP.Write($@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}");
         }
+        #endregion
     }
+    #endregion
 }
