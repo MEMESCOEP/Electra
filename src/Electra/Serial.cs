@@ -33,6 +33,8 @@
         /// <exception cref="InvalidOperationException"></exception>
         public static void SendCommand(string Operation, int Intensity, UInt32 Duration, int ShockerID)
         {
+            //Program.MessageBox(0, $@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}", "Serial JSON", 0);
+
             if (Intensity < 1 && Intensity > 100)
             {
                 throw new ArgumentOutOfRangeException("Intensity must be between 1 and 100!");
@@ -46,6 +48,11 @@
             if (!Operation.Equals(ShockerOperations.Shock) && !Operation.Equals(ShockerOperations.Vibrate) && !Operation.Equals(ShockerOperations.Beep))
             {
                 throw new InvalidOperationException($"The operation \"{Operation}\" is invalid!");
+            }
+
+            if(Program.SP == null)
+            {
+                throw new ArgumentNullException("The serial port is null!");
             }
 
             if (!Program.SP.IsOpen)

@@ -1,11 +1,10 @@
 ﻿using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.IO.Ports;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using DiscordRPC;
 using SharpHook;
-using System.IO.Ports;
-using System.Management;
-using System.Diagnostics;
 
 namespace Electra
 {
@@ -34,6 +33,7 @@ namespace Electra
         private static bool UseDraggingFPSLimit = true;
         private static bool EnableVerticalSync = true;
         private static bool EnableDiscordRPC = false;
+        private static bool WindowOpened = false;
         private static bool ExitProgram = false;
         private static bool DragLock = false;
         public static bool EnableSerial = true;
@@ -100,8 +100,9 @@ namespace Electra
         // Serial ports
         public static SerialPort? SP;
 
-        // Tuples
-        private static List<(int, int)> USB_SERIAL_IDS = new List<(int, int)>() { (0x1A86, 0x7523), (0x1A86, 0x55D4) };  // CH340 = PiShock Next; CH9102 = PiShock Lite
+        // App domain(s)
+        private static AppDomain CurrentAppDomain = AppDomain.CurrentDomain;
+
         #endregion
 
         /* DLL IMPORTS */
@@ -116,6 +117,9 @@ namespace Electra
         {
             try
             {
+                // Set up a handler for uncaught exceptions
+                CurrentAppDomain.UnhandledException += new UnhandledExceptionEventHandler(CrashSafely);
+
                 // Make sure the configuration file exists
                 if (!File.Exists(ConfigPath))
                 {
@@ -158,24 +162,14 @@ namespace Electra
             }
             catch (Exception ex)
             {
+                // Display an error message
                 if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "Electra - Configuration Error", 20) == 6)
                 {
                     MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "Electra - Configuration Error", 16);
                 }
 
-                DiscordRPCUpdateTimer.Stop();
-
-                if(RPCClient != null)
-                {
-                    RPCClient.Dispose();
-                }
-
-                if (SP != null && SP.IsOpen)
-                {
-                    SP.Close();
-                }
-
-                Environment.Exit(ex.HResult);
+                // Safely close the application
+                CloseApplication(ex.HResult);
             }
 
             // Find the COM port of the PiShock hub if serial is enabled
@@ -203,7 +197,11 @@ namespace Electra
 
                     if (string.IsNullOrEmpty(COMPort))
                     {
-                        throw new Exception("Failed to find the hub.");
+                        throw new Exception("Failed to find the hub because the COM port finder returned null.\n\n" +
+                            "The most common causes for this failure are:\n" +
+                            "    1. The hub is not connected to the computer via USB\n" +
+                            "    2. The USB cable you used cannot transmit data\n" +
+                            "    3. You don't have the CP210x drivers installed\n");
                     }
 
                     SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
@@ -213,29 +211,18 @@ namespace Electra
                     SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
                     SP.WriteTimeout = 500;
                     SP.Open();
-                    Serial.SendCommand(ShockerOperations.Shock, 1, 1000, 8669);
                 }
             }
             catch(Exception ex)
             {
+                // Display an error message
                 if (MessageBox(0, "Serial hub autodetection failed.\n\nWould you like to view extra error information?", "Electra - Serial Error", 20) == 6)
                 {
                     MessageBox(0, $"Error: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Serial Error", 16);
                 }
 
-                DiscordRPCUpdateTimer.Stop();
-
-                if (RPCClient != null)
-                {
-                    RPCClient.Dispose();
-                }
-
-                if (SP != null && SP.IsOpen)
-                {
-                    SP.Close();
-                }
-
-                Environment.Exit(ex.HResult);
+                // Safely close the application
+                //CloseApplication(ex.HResult);
             }
 
             // Assign the mouse hook events
@@ -311,6 +298,9 @@ namespace Electra
             // Start the mouse hook asynchronously
             MouseHook.RunAsync();
 
+            // This flag is set here because it is used to determine if the window should be closed or not
+            WindowOpened = true;
+
             // Main loop
             while (!ExitProgram && !Raylib.WindowShouldClose())
             {
@@ -369,27 +359,8 @@ namespace Electra
                 Raylib.EndDrawing();
             }
 
-            // Unload assets to prevent memory leaks and file errors
-            Raylib.UnloadImage(TaskbarLogo);
-            Raylib.UnloadImage(TitlebarLogo);
-            Raylib.UnloadTexture(TitlebarLogoTexture);
-
-            // Exit the application
-            DiscordRPCUpdateTimer.Stop();
-
-            if (RPCClient != null)
-            {
-                RPCClient.Dispose();
-            }
-
-            if (SP != null && SP.IsOpen)
-            {
-                SP.Close();
-            }
-
-            MouseHook.Dispose();
-            Raylib.CloseWindow();
-            Environment.Exit(0);
+            // Safely close the application
+            CloseApplication(0);
         }
 
         // Draw UI elements
@@ -519,6 +490,47 @@ namespace Electra
             {
                 MessageBox(0, data, "Serial Output", 0);
             }
+        }
+
+        // Safely handle uncaught exceptions
+        private static void CrashSafely(object sender, UnhandledExceptionEventArgs args)
+        {
+            Exception ex = (Exception)args.ExceptionObject;
+
+            MessageBox(0, $"An error occurred and was not caught: {ex.Message}\n\nStack trace: {ex.StackTrace}\n\nIs terminating: {args.IsTerminating}", "Electra - Error", 16);
+
+            CloseApplication(ex.HResult);
+        }
+
+        // Safely close the application
+        public static void CloseApplication(int ExitCode)
+        {
+            // Unload assets to prevent memory leaks and file errors
+            Raylib.UnloadImage(TaskbarLogo);
+            Raylib.UnloadImage(TitlebarLogo);
+            Raylib.UnloadTexture(TitlebarLogoTexture);
+
+            // Exit the application
+            DiscordRPCUpdateTimer.Stop();
+
+            if (RPCClient != null)
+            {
+                RPCClient.Dispose();
+            }
+
+            if (SP != null && SP.IsOpen)
+            {
+                SP.Close();
+            }
+
+            MouseHook.Dispose();
+
+            if (WindowOpened)
+            {
+                Raylib.CloseWindow();
+            }
+
+            Environment.Exit(ExitCode);
         }
         #endregion
     }

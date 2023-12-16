@@ -8,5 +8,6 @@
   "DiscordAppID": "1183550131577045102",
   "UseStationaryFPSLimit": true,
   "UseDraggingFPSLimit": true,
+  "EnableSerial": true,
   "EnableVSync": true
 }

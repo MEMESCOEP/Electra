@@ -138,36 +138,43 @@ namespace Electra
                 APIConfig.Duration = Math.Clamp(Duration, 0f, MaxDuration);
                 APIConfig.Op = Command;
 
-                // Serialize the configuration and POST it to the PiShock API via HTTP
-                StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
-                HttpResponseMessage PostResult;
-
-                if (Command == CommandType.GetShockerInfo)
+                if (Program.EnableSerial)
                 {
-                    PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
+                    Serial.SendCommand(Command.ToString().ToLower(), (int)Intensity, (uint)Duration * 1000, 8669);
                 }
                 else
                 {
-                    PostResult = HTTP.PostAsync(APIUrl, Content).Result;
-                }
+                    // Serialize the configuration and POST it to the PiShock API via HTTP
+                    StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
+                    HttpResponseMessage PostResult;
 
-                string StringResult = PostResult.Content.ReadAsStringAsync().Result;
-                PostResult.Dispose();
-                Content.Dispose();
+                    if (Command == CommandType.GetShockerInfo)
+                    {
+                        PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
+                    }
+                    else
+                    {
+                        PostResult = HTTP.PostAsync(APIUrl, Content).Result;
+                    }
 
-                // Parse the API result
-                ParseAPIResult(StringResult);
+                    string StringResult = PostResult.Content.ReadAsStringAsync().Result;
+                    PostResult.Dispose();
+                    Content.Dispose();
 
-                // If the command was
-                if (Command == CommandType.GetShockerInfo)
-                {
-                    MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
-                    MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
-                }
+                    // Parse the API result
+                    ParseAPIResult(StringResult);
+
+                    // If the command was
+                    if (Command == CommandType.GetShockerInfo)
+                    {
+                        MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
+                        MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
+                    }
+                }            
             }
             catch (Exception ex)
             {
-                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "Electra - Error", 16);
+                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Error", 16);
             }
 
             // Set the mouse cursor
