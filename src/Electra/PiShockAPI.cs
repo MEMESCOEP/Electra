@@ -20,8 +20,8 @@ namespace Electra
         public string? Name { get; set; } = "None";
         public string? Code { get; set; } = "None";
         public string? Apikey { get; set; } = "None";
-        public float Intensity { get; set; } = 0f;
-        public float Duration { get; set; } = 0f;
+        public float Intensity { get; set; } = 1f;
+        public float Duration { get; set; } = 1f;
         public PiShockAPI.CommandType Op { get; set; }
     }
 
@@ -30,8 +30,8 @@ namespace Electra
         public string? Name { get; set; } = "NO SHOCKER INFO";
         public bool? IsPaused { get; set; } = false;
         public bool? IsOnline { get; set; } = false;
-        public float? MaxIntensity { get; set; } = 0f;
-        public float? MaxDuration { get; set; } = 0f;
+        public float? MaxIntensity { get; set; } = 1f;
+        public float? MaxDuration { get; set; } = 1f;
         public int? ID { get; set; } = 0;
     }
 
@@ -72,6 +72,13 @@ namespace Electra
 
         /* FUNCTIONS */
         #region FUNCTIONS
+        /// <summary>
+        /// Configure the PiShock API
+        /// </summary>
+        /// <param name="PiShockAccountName">The PiShock account name you made when you created an account</param>
+        /// <param name="YourName">Your username, handle, real name, etc</param>
+        /// <param name="ShareCode">The share code for the shocker</param>
+        /// <param name="Key">The API key for your account</param>
         public static void Configure(string PiShockAccountName, string YourName, string ShareCode, string Key)
         {
             // Set the API configuration variables
@@ -81,21 +88,32 @@ namespace Electra
                 Name = YourName,
                 Code = ShareCode,
                 Apikey = Key,
-                Intensity = 0f,
-                Duration = 0f,
+                Intensity = 1f,
+                Duration = 1f,
                 Op = CommandType.Vibrate
             };
 
+            // Update the shocker information
             UpdateShockerInfo();
         }
 
+        /// <summary>
+        /// Update the maximum intensity and duration values
+        /// </summary>
+        /// <param name="Intensity">The maximum operation intensity</param>
+        /// <param name="Duration">The maximum operation duration</param>
         public static void UpdateMaximums(int Intensity, int Duration)
         {
-            // Set the maximum values
+            // Set the maximum intensity and duration values
+            ShockerInfo.MaxIntensity = Intensity;
+            ShockerInfo.MaxDuration = Duration;
             MaxIntensity = Intensity;
             MaxDuration = Duration;
         }
 
+        /// <summary>
+        /// Update the shocker information class
+        /// </summary>
         public static void UpdateShockerInfo()
         {
             // Set the mouse cursor
@@ -128,8 +146,6 @@ namespace Electra
                         ShockerInfo.IsOnline = ParsedResult.SelectToken("online").Value<bool>();
                         ShockerInfo.Name = ParsedResult.SelectToken("name").Value<string>();
                         ShockerInfo.ID = ParsedResult.SelectToken("id").Value<int>();
-                        ShockerInfo.MaxIntensity = MaxIntensity;
-                        ShockerInfo.MaxDuration = MaxDuration;
                     }
                 }
             }
@@ -142,6 +158,12 @@ namespace Electra
             Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
         }
 
+        /// <summary>
+        /// Send a command to the PiShock API or serial
+        /// </summary>
+        /// <param name="Intensity">The intensity of the operation</param>
+        /// <param name="Duration">The duration of the operation</param>
+        /// <param name="Command">The operation to perform</param>
         public static void SendCommand(float Intensity, float Duration, CommandType Command)
         {
             // Set the mouse cursor
@@ -164,6 +186,7 @@ namespace Electra
                     StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
                     HttpResponseMessage PostResult;
 
+                    // Don't send unnecessary information to the API if it isn't required. Bandwidth is expensive!
                     if (Command == CommandType.GetShockerInfo)
                     {
                         PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
@@ -173,6 +196,7 @@ namespace Electra
                         PostResult = HTTP.PostAsync(APIUrl, Content).Result;
                     }
 
+                    // Read the result from the API POST request
                     string StringResult = PostResult.Content.ReadAsStringAsync().Result;
                     PostResult.Dispose();
                     Content.Dispose();
@@ -190,6 +214,11 @@ namespace Electra
             Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_DEFAULT);
         }
 
+        /// <summary>
+        /// Parse the result that the PiShock API sent back, if it sent a response at all
+        /// </summary>
+        /// <param name="Result">The string that the API sent</param>
+        /// <returns></returns>
         public static bool ParseAPIResult(string Result)
         {
             // Get the API return code

@@ -5,7 +5,6 @@ using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using DiscordRPC;
 using SharpHook;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Electra
 {
@@ -98,9 +97,6 @@ namespace Electra
         // Discord RPC clients
         private static DiscordRpcClient? RPCClient;
 
-        // Serial ports
-        public static SerialPort? SP;
-
         // App domain(s)
         private static AppDomain CurrentAppDomain = AppDomain.CurrentDomain;
 
@@ -114,11 +110,14 @@ namespace Electra
 
         /* FUNCTIONS */
         #region FUNCTIONS
+        /// <summary>
+        /// Main program entry function
+        /// </summary>
         private static void Main(string[] args)
         {
             try
             {
-                // Set up a handler for uncaught exceptions
+                // Set up a handler for uncaught exceptions. This will most likely not handle Raylib errors
                 CurrentAppDomain.UnhandledException += new UnhandledExceptionEventHandler(CrashSafely);
 
                 // Make sure the configuration file exists
@@ -162,7 +161,6 @@ namespace Electra
                 }
                 else
                 {
-                    //PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
                     PiShockAPI.UpdateMaximums(ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>());
                     PiShockAPI.ShockerInfo.MaxIntensity = PiShockAPI.MaxIntensity;
                     PiShockAPI.ShockerInfo.MaxDuration = PiShockAPI.MaxDuration;
@@ -212,13 +210,18 @@ namespace Electra
                             "    3. You don't have the CP210x drivers installed\n");
                     }
 
-                    SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
-                    SP.Handshake = Handshake.None;
-                    SP.DtrEnable = false;
-                    SP.RtsEnable = false;
-                    SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
-                    SP.WriteTimeout = 500;
-                    SP.Open();
+                    // Create a way to communicate with the serial port
+                    Serial.SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
+
+                    // Set the serial connection properties
+                    Serial.SP.Handshake = Handshake.None;
+                    Serial.SP.DtrEnable = false;
+                    Serial.SP.RtsEnable = false;
+                    Serial.SP.DataReceived += new SerialDataReceivedEventHandler(Serial.SerialDataReceived);
+                    Serial.SP.WriteTimeout = 500;
+
+                    // Open the serial port and send an information request
+                    Serial.SP.Open();
                     Serial.SendCommand("info", 0, 0, 0);
                 }
             }
@@ -294,17 +297,19 @@ namespace Electra
             // Create textures from images
             TitlebarLogoTexture = Raylib.LoadTextureFromImage(TitlebarLogo);
 
-            // Configure and start the garbage collection timer
+            // Configure timers
+            // Garbage collection timer
             GarbageCollectionTimer.Recurring = true;
             GarbageCollectionTimer.Start();
 
+            // Discord RPC timer
             if (EnableDiscordRPC)
             {
                 DiscordRPCUpdateTimer.Recurring = true;
                 DiscordRPCUpdateTimer.Start();
             }                
 
-            // Start the mouse hook asynchronously
+            // Run the mouse hook asynchronously
             MouseHook.RunAsync();
 
             // This flag is set here because it is used to determine if the window should be closed or not
@@ -372,7 +377,9 @@ namespace Electra
             CloseApplication(0);
         }
 
-        // Draw UI elements
+        /// <summary>
+        /// Draw UI elements on the window
+        /// </summary>
         private static void UpdateScreen()
         {
             // Clear the window and draw the titlebar
@@ -462,14 +469,18 @@ namespace Electra
             Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, BorderColor);
         }
 
-        // Get the screen space mouse position when the mouse has been moved (the non-relative position on the screen in pixels)
+        /// <summary>
+        /// Get the screen space mouse position when the mouse has been moved (the non-relative position on the screen in pixels)
+        /// </summary>
         private static void OnMouseMoved(object? sender, MouseHookEventArgs e)
         {
             MousePos.X = e.Data.X;
             MousePos.Y = e.Data.Y;
         }
 
-        // Set the Discord RPC data
+        /// <summary>
+        /// Set the Discord RPC data
+        /// </summary>
         private static void UpdateRPC()
         {
             RPCClient.SetPresence(new RichPresence()
@@ -485,27 +496,9 @@ namespace Electra
             });
         }
 
-        // Get serial data from the hub
-        private static void SerialDataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            Thread.Sleep(50);
-            string SerialData = SP.ReadLine();
-
-            if (SerialData.StartsWith("TERMINALINFO:"))
-            {
-                SerialData = SerialData.Substring(SerialData.IndexOf('{'));
-                var ParsedResult = JObject.Parse(SerialData);
-
-                //MessageBox(0, SerialData, "Serial Output", 0);
-
-                foreach(var Shocker in ParsedResult.SelectToken("shockers"))
-                {
-                    PiShockAPI.ShockerInfo.ID = Shocker.SelectToken("id").Value<int>();
-                }
-            }
-        }
-
-        // Safely handle uncaught exceptions
+        /// <summary>
+        /// Safely handle uncaught exceptions
+        /// </summary>
         private static void CrashSafely(object sender, UnhandledExceptionEventArgs args)
         {
             Exception ex = (Exception)args.ExceptionObject;
@@ -515,7 +508,10 @@ namespace Electra
             CloseApplication(ex.HResult);
         }
 
-        // Safely close the application
+        /// <summary>
+        /// Safely close the application
+        /// </summary>
+        /// <param name="ExitCode">The code that the program shouls use when closing</param>
         public static void CloseApplication(int ExitCode)
         {
             // Unload assets to prevent memory leaks and/or file errors
@@ -531,11 +527,11 @@ namespace Electra
                 RPCClient.Dispose();
             }
 
-            if (SP != null && SP.IsOpen)
+            if (Serial.SP != null && Serial.SP.IsOpen)
             {
-                SP.WriteTimeout = -1;
-                SP.Close();
-                SP.Dispose();
+                Serial.SP.WriteTimeout = -1;
+                Serial.SP.Close();
+                Serial.SP.Dispose();
             }
 
             MouseHook.Dispose();

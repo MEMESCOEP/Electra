@@ -1,4 +1,7 @@
-﻿namespace Electra
+﻿using Newtonsoft.Json.Linq;
+using System.IO.Ports;
+
+namespace Electra
 {
     /* WARNING SUPRESSION */
     // These are disabled because they piss me off (and they aren't a concern)
@@ -21,6 +24,12 @@
 
     public class Serial
     {
+        /* VARIABLES */
+        #region VARIABLES
+        // Serial ports
+        public static SerialPort? SP;
+        #endregion
+
         /* FUNCTIONS */
         #region FUNCTIONS
         /// <summary>
@@ -49,23 +58,45 @@
                 throw new InvalidOperationException($"The operation \"{Operation}\" is invalid!");
             }
 
-            if(Program.SP == null)
+            if (SP == null || !SP.IsOpen)
             {
-                throw new ArgumentNullException("The serial port is null!");
-            }
-
-            if (!Program.SP.IsOpen)
-            {
-                throw new Exception("The serial port is not open!");
+                throw new Exception("The serial port is null or not open!");
             }
 
             if (Operation.Equals(ShockerOperations.Info))
             {
-                Program.SP.Write($@"{{""cmd"": ""info""}}");
+                SP.Write($@"{{""cmd"": ""info""}}");
             }
             else
             {
-                Program.SP.Write($@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}");
+                SP.Write($@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}");
+            }
+        }
+
+        // Get serial data from the hub
+        /// <summary>
+        /// Event handler for when serial data is received
+        /// </summary>
+        public static void SerialDataReceived(object sender, SerialDataReceivedEventArgs e)
+        {
+            // Wait for 50 ms to give the hub time to receive and parse a previous command
+            Thread.Sleep(50);
+
+            // Read the data the hub is sending
+            string SerialData = SP.ReadLine();
+
+            // If the received data is an information command, reconfigure
+            if (SerialData.StartsWith("TERMINALINFO:"))
+            {
+                SerialData = SerialData.Substring(SerialData.IndexOf('{'));
+                var ParsedResult = JObject.Parse(SerialData);
+
+                //MessageBox(0, SerialData, "Serial Output", 0);
+
+                foreach (var Shocker in ParsedResult.SelectToken("shockers"))
+                {
+                    PiShockAPI.ShockerInfo.ID = Shocker.SelectToken("id").Value<int>();
+                }
             }
         }
         #endregion
