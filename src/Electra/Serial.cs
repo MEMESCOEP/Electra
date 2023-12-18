@@ -16,6 +16,7 @@
         public const string Shock = "shock";
         public const string Vibrate = "vibrate";
         public const string Beep = "beep";
+        public const string Info = "info";
     }
 
     public class Serial
@@ -33,8 +34,6 @@
         /// <exception cref="InvalidOperationException"></exception>
         public static void SendCommand(string Operation, int Intensity, UInt32 Duration, int ShockerID)
         {
-            //Program.MessageBox(0, $@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}", "Serial JSON", 0);
-
             if (Intensity < 1 && Intensity > 100)
             {
                 throw new ArgumentOutOfRangeException("Intensity must be between 1 and 100!");
@@ -45,7 +44,7 @@
                 throw new ArgumentOutOfRangeException($"Duration must be between 1 and {UInt32.MaxValue}!");
             }
 
-            if (!Operation.Equals(ShockerOperations.Shock) && !Operation.Equals(ShockerOperations.Vibrate) && !Operation.Equals(ShockerOperations.Beep))
+            if (!Operation.Equals(ShockerOperations.Shock) && !Operation.Equals(ShockerOperations.Vibrate) && !Operation.Equals(ShockerOperations.Beep) && !Operation.Equals(ShockerOperations.Info))
             {
                 throw new InvalidOperationException($"The operation \"{Operation}\" is invalid!");
             }
@@ -60,7 +59,14 @@
                 throw new Exception("The serial port is not open!");
             }
 
-            Program.SP.Write($@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}");
+            if (Operation.Equals(ShockerOperations.Info))
+            {
+                Program.SP.Write($@"{{""cmd"": ""info""}}");
+            }
+            else
+            {
+                Program.SP.Write($@"{{""cmd"": ""operate"", ""value"": {{""id"": {ShockerID}, ""op"": ""{Operation}"", ""duration"": {Duration}, ""intensity"": {Intensity}}}}}");
+            }
         }
         #endregion
     }

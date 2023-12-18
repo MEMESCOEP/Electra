@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using DiscordRPC;
 using SharpHook;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Electra
 {
@@ -48,7 +49,7 @@ namespace Electra
         private static float DragOffsetY = 1f;
 
         // Lists
-        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync", "EnableSerial" };
+        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync", "EnableSerial", "MaxIntensitySerial", "MaxDurationSerial" };
 
         // Points
         private static System.Drawing.Point MousePos = new System.Drawing.Point(0, 0);
@@ -154,10 +155,17 @@ namespace Electra
                 TitlebarLogo = Raylib.LoadImage(Logo32Path);
                 TaskbarLogo = Raylib.LoadImage(Logo128Path);
 
-                // Configure the PiShock API if serial is not enabled
+                // Configure the PiShock API. If serial is enabled, use settings in the JSON configuration 
                 if (!EnableSerial)
                 {
                     PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
+                }
+                else
+                {
+                    //PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
+                    PiShockAPI.UpdateMaximums(ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>());
+                    PiShockAPI.ShockerInfo.MaxIntensity = PiShockAPI.MaxIntensity;
+                    PiShockAPI.ShockerInfo.MaxDuration = PiShockAPI.MaxDuration;
                 }
             }
             catch (Exception ex)
@@ -211,6 +219,7 @@ namespace Electra
                     SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
                     SP.WriteTimeout = 500;
                     SP.Open();
+                    Serial.SendCommand("info", 0, 0, 0);
                 }
             }
             catch(Exception ex)
@@ -222,7 +231,7 @@ namespace Electra
                 }
 
                 // Safely close the application
-                //CloseApplication(ex.HResult);
+                CloseApplication(ex.HResult);
             }
 
             // Assign the mouse hook events
@@ -480,15 +489,19 @@ namespace Electra
         private static void SerialDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             Thread.Sleep(50);
-            string data = SP.ReadLine();
+            string SerialData = SP.ReadLine();
 
-            var file = File.CreateText("honse.txt");
-            file.Write(data);
-            file.Close();
-
-            if (data.StartsWith("TERMINALINFO:"))
+            if (SerialData.StartsWith("TERMINALINFO:"))
             {
-                MessageBox(0, data, "Serial Output", 0);
+                SerialData = SerialData.Substring(SerialData.IndexOf('{'));
+                var ParsedResult = JObject.Parse(SerialData);
+
+                //MessageBox(0, SerialData, "Serial Output", 0);
+
+                foreach(var Shocker in ParsedResult.SelectToken("shockers"))
+                {
+                    PiShockAPI.ShockerInfo.ID = Shocker.SelectToken("id").Value<int>();
+                }
             }
         }
 
@@ -505,10 +518,10 @@ namespace Electra
         // Safely close the application
         public static void CloseApplication(int ExitCode)
         {
-            // Unload assets to prevent memory leaks and file errors
+            // Unload assets to prevent memory leaks and/or file errors
+            Raylib.UnloadTexture(TitlebarLogoTexture);
             Raylib.UnloadImage(TaskbarLogo);
             Raylib.UnloadImage(TitlebarLogo);
-            Raylib.UnloadTexture(TitlebarLogoTexture);
 
             // Exit the application
             DiscordRPCUpdateTimer.Stop();
@@ -520,7 +533,9 @@ namespace Electra
 
             if (SP != null && SP.IsOpen)
             {
+                SP.WriteTimeout = -1;
                 SP.Close();
+                SP.Dispose();
             }
 
             MouseHook.Dispose();

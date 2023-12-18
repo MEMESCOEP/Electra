@@ -16,12 +16,12 @@ namespace Electra
     #region CLASSES
     public class PiShockAPIConfiguration
     {
-        public string? Username { get; set; }
-        public string? Name { get; set; }
-        public string? Code { get; set; }
-        public string? Apikey { get; set; }
-        public float Intensity { get; set; }
-        public float Duration { get; set; }
+        public string? Username { get; set; } = "None";
+        public string? Name { get; set; } = "None";
+        public string? Code { get; set; } = "None";
+        public string? Apikey { get; set; } = "None";
+        public float Intensity { get; set; } = 0f;
+        public float Duration { get; set; } = 0f;
         public PiShockAPI.CommandType Op { get; set; }
     }
 
@@ -89,6 +89,13 @@ namespace Electra
             UpdateShockerInfo();
         }
 
+        public static void UpdateMaximums(int Intensity, int Duration)
+        {
+            // Set the maximum values
+            MaxIntensity = Intensity;
+            MaxDuration = Duration;
+        }
+
         public static void UpdateShockerInfo()
         {
             // Set the mouse cursor
@@ -96,25 +103,34 @@ namespace Electra
 
             try
             {
-                // Serialize the configuration and POST it to the PiShock API via HTTP
-                StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
-                HttpResponseMessage PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
-                string StringResult = PostResult.Content.ReadAsStringAsync().Result;
-
-                // Make sure we get a valid json response from the PiShock API
-                if (ParseAPIResult(StringResult))
+                if (Program.EnableSerial)
                 {
-                    // Set the max intensity and duration limits
-                    MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
-                    MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
+                    Serial.SendCommand("info", 0, 0, 0);
+                }
+                else
+                {
+                    // Serialize the configuration and POST it to the PiShock API via HTTP
+                    StringContent Content = new StringContent(JsonSerializer.Serialize(APIConfig), Encoding.UTF8, "application/json");
+                    HttpResponseMessage PostResult = HTTP.PostAsync(APIShockerInfoURL, Content).Result;
+                    string StringResult = PostResult.Content.ReadAsStringAsync().Result;
 
-                    // Update the shocker information class
-                    ShockerInfo.IsPaused = (bool)JObject.Parse(StringResult)["paused"];
-                    ShockerInfo.IsOnline = (bool)JObject.Parse(StringResult)["online"];
-                    ShockerInfo.Name = (string)JObject.Parse(StringResult)["name"];
-                    ShockerInfo.ID = (int)JObject.Parse(StringResult)["id"];
-                    ShockerInfo.MaxIntensity = MaxIntensity;
-                    ShockerInfo.MaxDuration = MaxDuration;
+                    // Make sure we get a valid json response from the PiShock API
+                    if (ParseAPIResult(StringResult))
+                    {
+                        // Parse the JSON response
+                        var ParsedResult = JObject.Parse(StringResult);
+
+                        // Set the max intensity and duration limits
+                        UpdateMaximums(ParsedResult.SelectToken("maxIntensity").Value<int>(), ParsedResult.SelectToken("maxDuration").Value<int>());
+
+                        // Update the shocker information class
+                        ShockerInfo.IsPaused = ParsedResult.SelectToken("paused").Value<bool>();
+                        ShockerInfo.IsOnline = ParsedResult.SelectToken("online").Value<bool>();
+                        ShockerInfo.Name = ParsedResult.SelectToken("name").Value<string>();
+                        ShockerInfo.ID = ParsedResult.SelectToken("id").Value<int>();
+                        ShockerInfo.MaxIntensity = MaxIntensity;
+                        ShockerInfo.MaxDuration = MaxDuration;
+                    }
                 }
             }
             catch(Exception ex)
@@ -163,13 +179,6 @@ namespace Electra
 
                     // Parse the API result
                     ParseAPIResult(StringResult);
-
-                    // If the command was
-                    if (Command == CommandType.GetShockerInfo)
-                    {
-                        MaxIntensity = (float)JObject.Parse(StringResult)["maxIntensity"];
-                        MaxDuration = (float)JObject.Parse(StringResult)["maxDuration"];
-                    }
                 }            
             }
             catch (Exception ex)

@@ -5,8 +5,12 @@
     "ShareCode"
   ],
   "APIKey": "Key",
+  "DiscordAppID": "1183550131577045102",
   "UseStationaryFPSLimit": true,
   "UseDraggingFPSLimit": true,
   "EnableDiscordRPC": true,
-  "EnableVSync": true
+  "EnableSerial": false,
+  "EnableVSync": true,
+  "MaxIntensitySerial": 25,
+  "MaxDurationSerial": 25
 }
