@@ -1,6 +1,7 @@
 ﻿/* DIRECTIVES */
 #region DIRECTIVES
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using System.IO.Ports;
 #endregion
 
@@ -37,6 +38,73 @@ namespace Electra
 
         /* FUNCTIONS */
         #region FUNCTIONS
+        /// <summary>
+        /// Initialize serial
+        /// </summary>
+        /// <param name="MaxIntensity">The maximum operation intensity</param>
+        /// <param name="MaxDuration">The maximum operation duration</param>
+        /// <param name="WriteTimeout">The maximum timeout in ms to use when writing to a serial device</param>
+        /// <param name="ReadTimeout">The maximum timeout in ms to use when reading from a serial device</param>
+        public static void Initialize(string COMPortName, int MaxIntensity, int MaxDuration, int WriteTimeout, int ReadTimeout)
+        {
+            // Create a way to communicate with the serial port
+            SP = new SerialPort(COMPortName, 115200, Parity.None, 8, StopBits.One);
+
+            // Set the serial connection properties
+            SP.Handshake = Handshake.None;
+            SP.DtrEnable = false;
+            SP.RtsEnable = false;
+            SP.DataReceived += new SerialDataReceivedEventHandler(Serial.SerialDataReceived);
+            SP.WriteTimeout = WriteTimeout;
+            SP.ReadTimeout = ReadTimeout;
+
+            // Open the serial port and send an information request
+            SP.Open();
+            SendCommand("info", 0, 0, 0);
+
+            PiShockAPI.UpdateMaximums(MaxIntensity, MaxDuration);
+            PiShockAPI.ShockerInfo.MaxIntensity = PiShockAPI.MaxIntensity;
+            PiShockAPI.ShockerInfo.MaxDuration = PiShockAPI.MaxDuration;
+            PiShockAPI.ShockerInfo.Name = $"Serial ({PiShockAPI.ShockerInfo.ID})";
+        }
+
+        /// <summary>
+        /// Get the COM port name of the hub
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public static string GetCOMPort()
+        {
+            ProcessStartInfo PyScript = new ProcessStartInfo();
+
+            // Set the execution properties for the process
+            PyScript.FileName = "GetCOMName.pye";
+            PyScript.UseShellExecute = false;
+            PyScript.CreateNoWindow = true;
+            PyScript.RedirectStandardOutput = true;
+
+            Process COMProcess = new Process();
+            COMProcess.StartInfo = PyScript;
+            COMProcess.StartInfo.RedirectStandardOutput = true;
+            COMProcess.Start();
+
+            StreamReader SR = COMProcess.StandardOutput;
+            string COMPort = SR.ReadLine();
+            COMProcess.WaitForExit();
+            COMProcess.Close();
+
+            if (string.IsNullOrEmpty(COMPort))
+            {
+                throw new Exception("Failed to find the hub because the COM port finder returned null.\n\n" +
+                    "The most common causes for this failure are:\n" +
+                    "    1. The hub is not connected to the computer via USB\n" +
+                    "    2. The USB cable you used cannot transmit data\n" +
+                    "    3. You don't have the CP210x drivers installed\n");
+            }
+
+            return COMPort;
+        }
+
         /// <summary>
         /// This function sends a JSON-formatted command string to the serial port where the hub is connected.
         /// </summary>
@@ -101,7 +169,21 @@ namespace Electra
                 foreach (var Shocker in ParsedResult.SelectToken("shockers"))
                 {
                     PiShockAPI.ShockerInfo.ID = Shocker.SelectToken("id").Value<int>();
+                    PiShockAPI.ShockerInfo.Name = $"Serial ({PiShockAPI.ShockerInfo.ID})";
                 }
+            }
+        }
+
+        /// <summary>
+        /// Close the serial port if it's in use
+        /// </summary>
+        public static void Close()
+        {
+            if (SP != null && SP.IsOpen)
+            {
+                SP.WriteTimeout = -1;
+                SP.Close();
+                SP.Dispose();
             }
         }
         #endregion

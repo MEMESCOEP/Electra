@@ -1,11 +1,8 @@
 ﻿/* DIRECTIVES */
 #region DIRECTIVES
 using System.Runtime.InteropServices;
-using System.Diagnostics;
-using System.IO.Ports;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
-using DiscordRPC;
 using SharpHook;
 #endregion
 
@@ -44,6 +41,8 @@ namespace Electra
         public static bool EnableSerial = true;
 
         // Integers
+        private static int SerialWriteTimeout = 5000;
+        private static int SerialReadTimeout = 5000;
         private static int DragSleepTime = 0;
         private static int ScreenHeight = 400;
         private static int ScreenWidth = 450;
@@ -92,7 +91,7 @@ namespace Electra
 
         // Timers
         private static Timer GarbageCollectionTimer = new Timer(5, new Action(() => GC.Collect()));
-        private static Timer DiscordRPCUpdateTimer = new Timer(1, new Action(() => UpdateRPC()));
+        private static Timer DiscordRPCUpdateTimer = new Timer(1, new Action(() => DiscordRPC.UpdateRPC()));
         private static Timer DragLockTimer = new Timer(0.1, new Action(() => RayGui.GuiUnlock()));
 
         // Strings
@@ -104,9 +103,6 @@ namespace Electra
 
         // Hooks
         private static SimpleGlobalHook MouseHook = new SimpleGlobalHook();
-
-        // Discord RPC clients
-        private static DiscordRpcClient? RPCClient;
 
         // App domain(s)
         private static AppDomain CurrentAppDomain = AppDomain.CurrentDomain;
@@ -158,8 +154,7 @@ namespace Electra
                 EnableSerial = ConfigData.SelectToken("EnableSerial").Value<bool>();
 
                 // Set up the discord RPC client
-                RPCClient = new DiscordRpcClient(ConfigData["DiscordAppID"].ToString());
-                RPCClient.Initialize();
+                DiscordRPC.Initialize(ConfigData["DiscordAppID"].ToString());
 
                 // Load images
                 IntensityIcon = Raylib.LoadImage(IntensityIconPath);
@@ -168,15 +163,28 @@ namespace Electra
                 TaskbarLogo = Raylib.LoadImage(Logo128Path);
 
                 // Configure the PiShock API. If serial is enabled, use settings in the JSON configuration 
-                if (!EnableSerial)
+                if (EnableSerial)
                 {
-                    PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
+                    // Find the COM port of the PiShock hub if serial is enabled
+                    try
+                    {
+                        Serial.Initialize(Serial.GetCOMPort(), ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>(), SerialWriteTimeout, SerialReadTimeout);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Display an error message
+                        if (MessageBox(0, "Serial hub autodetection failed.\n\nWould you like to view extra error information?", "Electra - Serial Error", 20) == 6)
+                        {
+                            MessageBox(0, $"Error: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Serial Error", 16);
+                        }
+
+                        // Safely close the application
+                        CloseApplication(ex.HResult);
+                    }                   
                 }
                 else
                 {
-                    PiShockAPI.UpdateMaximums(ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>());
-                    PiShockAPI.ShockerInfo.MaxIntensity = PiShockAPI.MaxIntensity;
-                    PiShockAPI.ShockerInfo.MaxDuration = PiShockAPI.MaxDuration;
+                    PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
                 }
             }
             catch (Exception ex)
@@ -185,66 +193,6 @@ namespace Electra
                 if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "Electra - Configuration Error", 20) == 6)
                 {
                     MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "Electra - Configuration Error", 16);
-                }
-
-                // Safely close the application
-                CloseApplication(ex.HResult);
-            }
-
-            // Find the COM port of the PiShock hub if serial is enabled
-            try
-            {                
-                if (EnableSerial)
-                {
-                    ProcessStartInfo PyScript = new ProcessStartInfo();
-
-                    // Set the execution properties for the process
-                    PyScript.FileName = "GetCOMName.pye";
-                    PyScript.UseShellExecute = false;
-                    PyScript.CreateNoWindow = true;
-                    PyScript.RedirectStandardOutput = true;
-
-                    Process COMProcess = new Process();
-                    COMProcess.StartInfo = PyScript;
-                    COMProcess.StartInfo.RedirectStandardOutput = true;
-                    COMProcess.Start();
-
-                    StreamReader SR = COMProcess.StandardOutput;
-                    string COMPort = SR.ReadLine();
-                    COMProcess.WaitForExit();
-                    COMProcess.Close();
-
-                    if (string.IsNullOrEmpty(COMPort))
-                    {
-                        throw new Exception("Failed to find the hub because the COM port finder returned null.\n\n" +
-                            "The most common causes for this failure are:\n" +
-                            "    1. The hub is not connected to the computer via USB\n" +
-                            "    2. The USB cable you used cannot transmit data\n" +
-                            "    3. You don't have the CP210x drivers installed\n");
-                    }
-
-                    // Create a way to communicate with the serial port
-                    Serial.SP = new SerialPort(COMPort, 115200, Parity.None, 8, StopBits.One);
-
-                    // Set the serial connection properties
-                    Serial.SP.Handshake = Handshake.None;
-                    Serial.SP.DtrEnable = false;
-                    Serial.SP.RtsEnable = false;
-                    Serial.SP.DataReceived += new SerialDataReceivedEventHandler(Serial.SerialDataReceived);
-                    Serial.SP.WriteTimeout = 500;
-                    Serial.SP.ReadTimeout = 500;
-
-                    // Open the serial port and send an information request
-                    Serial.SP.Open();
-                    Serial.SendCommand("info", 0, 0, 0);
-                }
-            }
-            catch(Exception ex)
-            {
-                // Display an error message
-                if (MessageBox(0, "Serial hub autodetection failed.\n\nWould you like to view extra error information?", "Electra - Serial Error", 20) == 6)
-                {
-                    MessageBox(0, $"Error: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Serial Error", 16);
                 }
 
                 // Safely close the application
@@ -499,24 +447,6 @@ namespace Electra
         }
 
         /// <summary>
-        /// Set the Discord RPC data
-        /// </summary>
-        private static void UpdateRPC()
-        {
-            RPCClient.SetPresence(new RichPresence()
-            {
-                Details = PiShockAPI.ShockerInfo.Name,
-                State = $"Intensity: {PiShockAPI.Intensity} || Duration: {PiShockAPI.Duration}",
-                Assets = new Assets()
-                {
-                    LargeImageKey = "https://pishock.com/statics/icons/favicon-128x128.png",
-                    LargeImageText = "PiShock Logo",
-                    SmallImageKey = "https://pishock.com/statics/icons/favicon-32x32.png"
-                }
-            });
-        }
-
-        /// <summary>
         /// Safely handle uncaught exceptions
         /// </summary>
         private static void CrashSafely(object sender, UnhandledExceptionEventArgs args)
@@ -534,33 +464,31 @@ namespace Electra
         /// <param name="ExitCode">The code that the program shouls use when closing</param>
         public static void CloseApplication(int ExitCode)
         {
+            // Stop recurring timers
+            GarbageCollectionTimer.Stop();
+            DiscordRPCUpdateTimer.Stop();
+
+            // Close the Discord RPC client
+            DiscordRPC.Close();
+
+            // Close the serial port if it's in use
+            Serial.Close();
+
+            // Dispose of the mouse hook
+            MouseHook.Dispose();
+
             // Unload assets to prevent memory leaks and/or file errors
             Raylib.UnloadTexture(TitlebarLogoTexture);
             Raylib.UnloadImage(TaskbarLogo);
             Raylib.UnloadImage(TitlebarLogo);
 
-            // Exit the application
-            DiscordRPCUpdateTimer.Stop();
-
-            if (RPCClient != null)
-            {
-                RPCClient.Dispose();
-            }
-
-            if (Serial.SP != null && Serial.SP.IsOpen)
-            {
-                Serial.SP.WriteTimeout = -1;
-                Serial.SP.Close();
-                Serial.SP.Dispose();
-            }
-
-            MouseHook.Dispose();
-
+            // Close the window
             if (WindowOpened)
             {
                 Raylib.CloseWindow();
             }
 
+            // Exit the application
             Environment.Exit(ExitCode);
         }
         #endregion
