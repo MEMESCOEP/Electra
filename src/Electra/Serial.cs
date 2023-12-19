@@ -1,6 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
+﻿/* DIRECTIVES */
+#region DIRECTIVES
+using Newtonsoft.Json.Linq;
 using System.IO.Ports;
+#endregion
 
+/* NAMESPACES */
+#region NAMESPACES
 namespace Electra
 {
     /* WARNING SUPRESSION */
@@ -103,3 +108,4 @@ namespace Electra
     }
     #endregion
 }
+#endregion

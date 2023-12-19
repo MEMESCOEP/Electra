@@ -1,8 +1,13 @@
-﻿using Newtonsoft.Json.Linq;
+﻿/* DIRECTIVES */
+#region DIRECTIVES
+using Newtonsoft.Json.Linq;
 using System.Text.Json;
 using System.Text;
 using Raylib_CsLo;
+#endregion
 
+/* NAMESPACES */
+#region NAMESPACES
 namespace Electra
 {
     /* WARNING SUPRESSION */
@@ -288,3 +293,4 @@ namespace Electra
     }
     #endregion
 }
+#endregion

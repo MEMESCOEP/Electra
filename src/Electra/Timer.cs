@@ -1,5 +1,10 @@
-﻿using Raylib_CsLo;
+﻿/* DIRECTVES */
+#region DIRECTIVES
+using Raylib_CsLo;
+#endregion
 
+/* NAMESPACES */
+#region NAMESPACES
 namespace Electra
 {
     public class Timer
@@ -96,3 +101,4 @@ namespace Electra
         #endregion
     }
 }
+#endregion

@@ -1,11 +1,16 @@
-﻿using System.Runtime.InteropServices;
+﻿/* DIRECTIVES */
+#region DIRECTIVES
+using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.IO.Ports;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using DiscordRPC;
 using SharpHook;
+#endregion
 
+/* NAMESPACES */
+#region NAMESPACES
 namespace Electra
 {
     /********** NOTE **********/
@@ -66,11 +71,15 @@ namespace Electra
         private static Rectangle DragRect = new Rectangle(0, 0, ScreenWidth - 96, 48);
 
         // Images
+        private static Image IntensityIcon;
+        private static Image DurationIcon;
         private static Image TitlebarLogo;
         private static Image TaskbarLogo;
 
         // Textures
         private static Texture TitlebarLogoTexture;
+        private static Texture IntensityTexture;
+        private static Texture DurationTexture;
 
         // Colors
         private static Color MinimizePressedColor = new Color(64, 64, 64, 255);
@@ -87,6 +96,8 @@ namespace Electra
         private static Timer DragLockTimer = new Timer(0.1, new Action(() => RayGui.GuiUnlock()));
 
         // Strings
+        private static string IntensityIconPath = @"Assets/Intensity.png";
+        private static string DurationIconPath = @"Assets/Duration.png";
         private static string Logo128Path = @"Assets/Logo_128x128.png";
         private static string Logo32Path = @"Assets/Logo_32x32.png";
         private static string ConfigPath = @"Assets/ElectraConfig.json";
@@ -151,6 +162,8 @@ namespace Electra
                 RPCClient.Initialize();
 
                 // Load images
+                IntensityIcon = Raylib.LoadImage(IntensityIconPath);
+                DurationIcon = Raylib.LoadImage(DurationIconPath);
                 TitlebarLogo = Raylib.LoadImage(Logo32Path);
                 TaskbarLogo = Raylib.LoadImage(Logo128Path);
 
@@ -219,6 +232,7 @@ namespace Electra
                     Serial.SP.RtsEnable = false;
                     Serial.SP.DataReceived += new SerialDataReceivedEventHandler(Serial.SerialDataReceived);
                     Serial.SP.WriteTimeout = 500;
+                    Serial.SP.ReadTimeout = 500;
 
                     // Open the serial port and send an information request
                     Serial.SP.Open();
@@ -296,6 +310,8 @@ namespace Electra
 
             // Create textures from images
             TitlebarLogoTexture = Raylib.LoadTextureFromImage(TitlebarLogo);
+            IntensityTexture = Raylib.LoadTextureFromImage(IntensityIcon);
+            DurationTexture = Raylib.LoadTextureFromImage(DurationIcon);
 
             // Configure timers
             // Garbage collection timer
@@ -322,7 +338,7 @@ namespace Electra
                 Raylib.BeginDrawing();
 
                 // Check if the user is dragging the window
-                if (!DragLock && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), DragRect) && Raylib.IsWindowFocused() && Raylib.IsMouseButtonPressed(0))
+                if (!DragLock && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), DragRect) && Raylib.IsMouseButtonPressed(0))
                 {
                     DragOffsetX = Math.Abs(Raylib.GetWindowPosition().X - MousePos.X);
                     DragOffsetY = Math.Abs(Raylib.GetWindowPosition().Y - MousePos.Y);
@@ -387,11 +403,11 @@ namespace Electra
             Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
 
             // Get the intensity and duration from the sliders
-            PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"INT: {PiShockAPI.Intensity}", PiShockAPI.Intensity, 1, PiShockAPI.MaxIntensity);
-            PiShockAPI.Duration = (int)RayGui.GuiSlider(DurationRect, null, $"DUR: {PiShockAPI.Duration}", PiShockAPI.Duration, 1, PiShockAPI.MaxDuration);
+            PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"    {PiShockAPI.Intensity}%", PiShockAPI.Intensity, 1, PiShockAPI.MaxIntensity);
+            PiShockAPI.Duration = (int)RayGui.GuiSlider(DurationRect, null, $"    {PiShockAPI.Duration}s", PiShockAPI.Duration, 1, PiShockAPI.MaxDuration);
 
             // Draw and process buttons
-            // Refresh information button
+            // Refresh button
             if (RayGui.GuiButton(RefreshRect, "REFRESH INFO") && !DragLock)
             {
                 PiShockAPI.UpdateShockerInfo();
@@ -464,6 +480,10 @@ namespace Electra
             Raylib.DrawRectangle(418, 16, 16, 16, Raylib.RED);
             Raylib.DrawText("x", 421, 13, 20, Raylib.WHITE);
             Raylib.DrawLine(ScreenWidth - 80, 24, ScreenWidth - 64, 24, Raylib.WHITE);
+
+            // Draw textures
+            Raylib.DrawTexture(IntensityTexture, 396, 225, Raylib.WHITE);
+            Raylib.DrawTexture(DurationTexture, 396, 244, Raylib.WHITE);
 
             // Draw the window border
             Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, BorderColor);
@@ -547,3 +567,4 @@ namespace Electra
     }
     #endregion
 }
+#endregion
