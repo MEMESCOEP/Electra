@@ -12,5 +12,6 @@
   "EnableSerial": false,
   "EnableVSync": true,
   "MaxIntensitySerial": 25,
-  "MaxDurationSerial": 25
+  "MaxDurationSerial": 25,
+  "SerialShockerID": 1234
 }

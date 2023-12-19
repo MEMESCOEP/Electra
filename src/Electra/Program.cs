@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using SharpHook;
+using SDL2;
 #endregion
 
 /* NAMESPACES */
@@ -44,30 +45,32 @@ namespace Electra
         private static int SerialWriteTimeout = 5000;
         private static int SerialReadTimeout = 5000;
         private static int DragSleepTime = 0;
-        private static int ScreenHeight = 400;
-        private static int ScreenWidth = 450;
+        private static int WindowHeight = 400;
+        private static int ScreenHeight = 0;
+        private static int WindowWidth = 450;
+        private static int ScreenWidth = 0;
 
         // Floats
         private static float DragOffsetX = 1f;
         private static float DragOffsetY = 1f;
 
         // Lists
-        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync", "EnableSerial", "MaxIntensitySerial", "MaxDurationSerial" };
+        private static List<string> ConfigKeys = new List<string>() { "PiShockAccountName", "YourName", "ShareCodes", "APIKey", "DiscordAppID", "UseStationaryFPSLimit", "UseDraggingFPSLimit", "EnableDiscordRPC", "EnableVSync", "EnableSerial", "MaxIntensitySerial", "MaxDurationSerial", "SerialShockerID" };
 
         // Points
         private static System.Drawing.Point MousePos = new System.Drawing.Point(0, 0);
 
         // Rectangles
-        private static Rectangle IntensityRect = new Rectangle(16, 224, ScreenWidth - 72, 16);
-        private static Rectangle DurationRect = new Rectangle(16, 244, ScreenWidth - 72, 16);
-        private static Rectangle MinimizeRect = new Rectangle(ScreenWidth - 96, 0, 48, 48);
-        private static Rectangle RefreshRect = new Rectangle(16, 184, ScreenWidth - 32, 32);
-        private static Rectangle VibrateRect = new Rectangle(16, 104, ScreenWidth - 32, 32);
-        private static Rectangle CloseRect = new Rectangle(ScreenWidth - 48, 0, 48, 48);
-        private static Rectangle ShockRect = new Rectangle(16, 144, ScreenWidth - 32, 32);
-        private static Rectangle InfoRect = new Rectangle(16, 268, ScreenWidth - 32, 114);
-        private static Rectangle BeepRect = new Rectangle(16, 64, ScreenWidth - 32, 32);
-        private static Rectangle DragRect = new Rectangle(0, 0, ScreenWidth - 96, 48);
+        private static Rectangle IntensityRect = new Rectangle(16, 224, WindowWidth - 72, 16);
+        private static Rectangle DurationRect = new Rectangle(16, 244, WindowWidth - 72, 16);
+        private static Rectangle MinimizeRect = new Rectangle(WindowWidth - 96, 0, 48, 48);
+        private static Rectangle RefreshRect = new Rectangle(16, 184, WindowWidth - 32, 32);
+        private static Rectangle VibrateRect = new Rectangle(16, 104, WindowWidth - 32, 32);
+        private static Rectangle CloseRect = new Rectangle(WindowWidth - 48, 0, 48, 48);
+        private static Rectangle ShockRect = new Rectangle(16, 144, WindowWidth - 32, 32);
+        private static Rectangle InfoRect = new Rectangle(16, 268, WindowWidth - 32, 114);
+        private static Rectangle BeepRect = new Rectangle(16, 64, WindowWidth - 32, 32);
+        private static Rectangle DragRect = new Rectangle(0, 0, WindowWidth - 96, 48);
 
         // Images
         private static Image IntensityIcon;
@@ -109,16 +112,10 @@ namespace Electra
 
         #endregion
 
-        /* DLL IMPORTS */
-        #region DLL IMPORTS
-        [DllImport("User32.dll", CharSet = CharSet.Unicode)]
-        public static extern int MessageBox(IntPtr h, string m, string c, int type);
-        #endregion
-
         /* FUNCTIONS */
         #region FUNCTIONS
         /// <summary>
-        /// Main program entry function
+        /// Main program entry function.
         /// </summary>
         private static void Main(string[] args)
         {
@@ -126,6 +123,10 @@ namespace Electra
             {
                 // Set up a handler for uncaught exceptions. This will most likely not handle Raylib errors
                 CurrentAppDomain.UnhandledException += new UnhandledExceptionEventHandler(CrashSafely);
+
+                // Get the screen dimensions
+                ScreenWidth = SharpHook.Native.UioHook.CreateScreenInfo()[0].Width;
+                ScreenHeight = SharpHook.Native.UioHook.CreateScreenInfo()[0].Height;
 
                 // Make sure the configuration file exists
                 if (!File.Exists(ConfigPath))
@@ -168,15 +169,12 @@ namespace Electra
                     // Find the COM port of the PiShock hub if serial is enabled
                     try
                     {
-                        Serial.Initialize(Serial.GetCOMPort(), ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>(), SerialWriteTimeout, SerialReadTimeout);
+                        Serial.Initialize(Serial.GetCOMPort(), ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>(), SerialWriteTimeout, SerialReadTimeout, ConfigData.SelectToken("SerialShockerID").Value<int>());
                     }
                     catch (Exception ex)
                     {
                         // Display an error message
-                        if (MessageBox(0, "Serial hub autodetection failed.\n\nWould you like to view extra error information?", "Electra - Serial Error", 20) == 6)
-                        {
-                            MessageBox(0, $"Error: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Serial Error", 16);
-                        }
+                        SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Serial Error", $"Serial hub autodetection failed.\n\nError: {ex.Message}\n\nStack trace: {ex.StackTrace}", 0);
 
                         // Safely close the application
                         CloseApplication(ex.HResult);
@@ -190,10 +188,7 @@ namespace Electra
             catch (Exception ex)
             {
                 // Display an error message
-                if(MessageBox(0, "The configuration could not be loaded. Please fix any issues and restart the application.\n\nWould you like to view extra error information?", "Electra - Configuration Error", 20) == 6)
-                {
-                    MessageBox(0, $"Error: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", "Electra - Configuration Error", 16);
-                }
+                SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The configuration could not be loaded. Please fix any issues and restart the application.\n\nError: {ex.Message}\n\nConfiguration path: \"{Path.GetFullPath(ConfigPath)}\"\n\nStack trace: {ex.StackTrace}", 0);
 
                 // Safely close the application
                 CloseApplication(ex.HResult);
@@ -213,7 +208,7 @@ namespace Electra
             }
 
             // Create a window and set it's icon
-            Raylib.InitWindow(ScreenWidth, ScreenHeight, "Electra");
+            Raylib.InitWindow(WindowWidth, WindowHeight, "Electra");
             Raylib.SetWindowIcon(TaskbarLogo);
 
             // Set the style manually because raylib doesn't seem to want to load a style from the disk properly >:(
@@ -342,13 +337,13 @@ namespace Electra
         }
 
         /// <summary>
-        /// Draw UI elements on the window
+        /// Draw UI elements on the window.
         /// </summary>
         private static void UpdateScreen()
         {
             // Clear the window and draw the titlebar
             Raylib.ClearBackground(BGColor);
-            Raylib.DrawRectangle(0, 0, ScreenWidth, 48, TitlebarColor);
+            Raylib.DrawRectangle(0, 0, WindowWidth, 48, TitlebarColor);
 
             // Get the intensity and duration from the sliders
             PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"    {PiShockAPI.Intensity}%", PiShockAPI.Intensity, 1, PiShockAPI.MaxIntensity);
@@ -380,7 +375,7 @@ namespace Electra
             }
 
             // Check if the user is closing the window
-            if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), CloseRect))
+            if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), CloseRect) && !DragLock)
             {
                 if (Raylib.IsMouseButtonReleased(0) && Raylib.IsWindowFocused())
                 {
@@ -388,16 +383,16 @@ namespace Electra
                 }
                 else if(Raylib.IsMouseButtonDown(0))
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 48, 0, 48, 48, ClosePressedColor);
+                    Raylib.DrawRectangle(WindowWidth - 48, 0, 48, 48, ClosePressedColor);
                 }
                 else
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 48, 0, 48, 48, CloseNormalColor);
+                    Raylib.DrawRectangle(WindowWidth - 48, 0, 48, 48, CloseNormalColor);
                 }
             }
 
             // Check if the user is minimizing the window
-            else if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), MinimizeRect))
+            else if (Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), MinimizeRect) && !DragLock)
             {
                 if (Raylib.IsMouseButtonReleased(0) && Raylib.IsWindowFocused())
                 {
@@ -405,17 +400,17 @@ namespace Electra
                 }
                 else if (Raylib.IsMouseButtonDown(0))
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 96, 0, 48, 48, MinimizePressedColor);
+                    Raylib.DrawRectangle(WindowWidth - 96, 0, 48, 48, MinimizePressedColor);
                 }
                 else
                 {
-                    Raylib.DrawRectangle(ScreenWidth - 96, 0, 48, 48, MinimizeNormalColor);
+                    Raylib.DrawRectangle(WindowWidth - 96, 0, 48, 48, MinimizeNormalColor);
                 }
             }
 
             // Draw the shocker information
             Raylib.DrawRectangleLinesEx(InfoRect, 2, Raylib.GetColor(0x2F7486FF));
-            Raylib.DrawRectangle(18, 270, ScreenWidth - 36, 110, Raylib.GetColor(0x024658FF));
+            Raylib.DrawRectangle(18, 270, WindowWidth - 36, 110, Raylib.GetColor(0x024658FF));
             Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 274, 20, Raylib.GOLD);
             Raylib.DrawText($"    ID: {PiShockAPI.ShockerInfo.ID}", 22, 294, 20, Raylib.GOLD);
             Raylib.DrawText($"    Paused: {PiShockAPI.ShockerInfo.IsPaused}", 22, 314, 20, Raylib.GOLD);
@@ -423,45 +418,49 @@ namespace Electra
             Raylib.DrawText($"    Share code: {PiShockAPI.APIConfig.Code}", 22, 354, 20, Raylib.GOLD);
 
             // Draw the titlebar decorations
+            // Title & Icon
             Raylib.DrawText("Electra", 40, 14, 20, Raylib.GOLD);
             Raylib.DrawTexture(TitlebarLogoTexture, 6, 6, Raylib.WHITE);
+
+            // Close button
             Raylib.DrawRectangle(418, 16, 16, 16, Raylib.RED);
             Raylib.DrawText("x", 421, 13, 20, Raylib.WHITE);
-            Raylib.DrawLine(ScreenWidth - 80, 24, ScreenWidth - 64, 24, Raylib.WHITE);
+
+            // Minimize button
+            Raylib.DrawLine(WindowWidth - 80, 24, WindowWidth - 64, 24, Raylib.WHITE);
 
             // Draw textures
             Raylib.DrawTexture(IntensityTexture, 396, 225, Raylib.WHITE);
             Raylib.DrawTexture(DurationTexture, 396, 244, Raylib.WHITE);
 
             // Draw the window border
-            Raylib.DrawRectangleLines(0, 0, ScreenWidth, ScreenHeight, BorderColor);
+            Raylib.DrawRectangleLines(0, 0, WindowWidth, WindowHeight, BorderColor);
         }
 
         /// <summary>
-        /// Get the screen space mouse position when the mouse has been moved (the non-relative position on the screen in pixels)
+        /// Get the screen space mouse position when the mouse has been moved (the non window-relative position on the screen in pixels).
         /// </summary>
         private static void OnMouseMoved(object? sender, MouseHookEventArgs e)
         {
-            MousePos.X = e.Data.X;
-            MousePos.Y = e.Data.Y;
+            MousePos.X = Math.Clamp(e.Data.X, 0, ScreenWidth);
+            MousePos.Y = Math.Clamp(e.Data.Y, 0, ScreenHeight);
         }
 
         /// <summary>
-        /// Safely handle uncaught exceptions
+        /// Safely handle uncaught exceptions.
         /// </summary>
         private static void CrashSafely(object sender, UnhandledExceptionEventArgs args)
         {
             Exception ex = (Exception)args.ExceptionObject;
 
-            MessageBox(0, $"An error occurred and was not caught: {ex.Message}\n\nStack trace: {ex.StackTrace}\n\nIs terminating: {args.IsTerminating}", "Electra - Error", 16);
-
+            SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"An error occurred and was not caught: {ex.Message}\n\nStack trace: {ex.StackTrace}\n\nIs terminating: {args.IsTerminating}", 0);
             CloseApplication(ex.HResult);
         }
 
         /// <summary>
-        /// Safely close the application
+        /// Safely close the application.
         /// </summary>
-        /// <param name="ExitCode">The code that the program shouls use when closing</param>
+        /// <param name="ExitCode">The exit code that the program should use when closing.</param>
         public static void CloseApplication(int ExitCode)
         {
             // Stop recurring timers

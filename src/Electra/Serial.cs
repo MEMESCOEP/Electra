@@ -3,6 +3,7 @@
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Net.Sockets;
 #endregion
 
 /* NAMESPACES */
@@ -39,40 +40,43 @@ namespace Electra
         /* FUNCTIONS */
         #region FUNCTIONS
         /// <summary>
-        /// Initialize serial
+        /// Initialize serial.
         /// </summary>
-        /// <param name="MaxIntensity">The maximum operation intensity</param>
-        /// <param name="MaxDuration">The maximum operation duration</param>
-        /// <param name="WriteTimeout">The maximum timeout in ms to use when writing to a serial device</param>
-        /// <param name="ReadTimeout">The maximum timeout in ms to use when reading from a serial device</param>
-        public static void Initialize(string COMPortName, int MaxIntensity, int MaxDuration, int WriteTimeout, int ReadTimeout)
+        /// <param name="MaxIntensity">The maximum operation intensity.</param>
+        /// <param name="MaxDuration">The maximum operation duration.</param>
+        /// <param name="WriteTimeout">The maximum timeout in ms to use when writing to a serial device.</param>
+        /// <param name="ReadTimeout">The maximum timeout in ms to use when reading from a serial device.</param>
+        /// <param name="ShockerID">The ID of the shocker that should be used.</param>
+        public static void Initialize(string COMPortName, int MaxIntensity, int MaxDuration, int WriteTimeout, int ReadTimeout, int ShockerID)
         {
-            // Create a way to communicate with the serial port
+            // Create a new instance of SerialPort
             SP = new SerialPort(COMPortName, 115200, Parity.None, 8, StopBits.One);
 
             // Set the serial connection properties
+            SP.DataReceived += new SerialDataReceivedEventHandler(SerialDataReceived);
+            SP.WriteTimeout = WriteTimeout;
+            SP.ReadTimeout = ReadTimeout;
             SP.Handshake = Handshake.None;
             SP.DtrEnable = false;
             SP.RtsEnable = false;
-            SP.DataReceived += new SerialDataReceivedEventHandler(Serial.SerialDataReceived);
-            SP.WriteTimeout = WriteTimeout;
-            SP.ReadTimeout = ReadTimeout;
 
             // Open the serial port and send an information request
             SP.Open();
             SendCommand("info", 0, 0, 0);
 
+            // Update the shocker information
             PiShockAPI.UpdateMaximums(MaxIntensity, MaxDuration);
             PiShockAPI.ShockerInfo.MaxIntensity = PiShockAPI.MaxIntensity;
             PiShockAPI.ShockerInfo.MaxDuration = PiShockAPI.MaxDuration;
-            PiShockAPI.ShockerInfo.Name = $"Serial ({PiShockAPI.ShockerInfo.ID})";
+            PiShockAPI.ShockerInfo.Name = $"Serial ({ShockerID})";
+            PiShockAPI.ShockerInfo.ID = ShockerID;
         }
 
         /// <summary>
-        /// Get the COM port name of the hub
+        /// Get the COM port name of the hub.
         /// </summary>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
+        /// <returns>Returns a string with the COM port name.</returns>
+        /// <exception cref="Exception">Throws an exception if a COM port wasn't found.</exception>
         public static string GetCOMPort()
         {
             ProcessStartInfo PyScript = new ProcessStartInfo();
@@ -96,7 +100,7 @@ namespace Electra
             if (string.IsNullOrEmpty(COMPort))
             {
                 throw new Exception("Failed to find the hub because the COM port finder returned null.\n\n" +
-                    "The most common causes for this failure are:\n" +
+                    "The most common causes for this error are:\n" +
                     "    1. The hub is not connected to the computer via USB\n" +
                     "    2. The USB cable you used cannot transmit data\n" +
                     "    3. You don't have the CP210x drivers installed\n");
@@ -111,7 +115,7 @@ namespace Electra
         /// <param name="Operation">The operation the shocker should perform. This should be one of the values defined in the ShockerOperations class.</param>
         /// <param name="Intensity">The intensity the shocker should use when performing an operation. This should be an integer between 1 and 100 (power percentage), and does not apply to beeping.</param>
         /// <param name="Duration">The duration in milliseconds of the operation that the shocker will perform.</param>
-        /// <param name="ShockerID">the ID of the shocker.</param>
+        /// <param name="ShockerID">The ID of the shocker to use.</param>
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
         public static void SendCommand(string Operation, int Intensity, UInt32 Duration, int ShockerID)
@@ -146,9 +150,8 @@ namespace Electra
             }
         }
 
-        // Get serial data from the hub
         /// <summary>
-        /// Event handler for when serial data is received
+        /// Event handler for when serial data is received from the hub.
         /// </summary>
         public static void SerialDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
@@ -164,18 +167,16 @@ namespace Electra
                 SerialData = SerialData.Substring(SerialData.IndexOf('{'));
                 var ParsedResult = JObject.Parse(SerialData);
 
-                //MessageBox(0, SerialData, "Serial Output", 0);
-
-                foreach (var Shocker in ParsedResult.SelectToken("shockers"))
+                /*foreach (var Shocker in ParsedResult.SelectToken("shockers"))
                 {
                     PiShockAPI.ShockerInfo.ID = Shocker.SelectToken("id").Value<int>();
                     PiShockAPI.ShockerInfo.Name = $"Serial ({PiShockAPI.ShockerInfo.ID})";
-                }
+                }*/
             }
         }
 
         /// <summary>
-        /// Close the serial port if it's in use
+        /// Close the serial port if it's in use.
         /// </summary>
         public static void Close()
         {

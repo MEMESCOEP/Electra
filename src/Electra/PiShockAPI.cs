@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using System.Text.Json;
 using System.Text;
 using Raylib_CsLo;
+using SDL2;
 #endregion
 
 /* NAMESPACES */
@@ -69,21 +70,21 @@ namespace Electra
         private static HttpClient HTTP = new HttpClient();
 
         // Floats
-        public static float MaxIntensity { get; private set; } = 0f;
-        public static float MaxDuration { get; private set; } = 0f;
-        public static float Intensity = 0f;
-        public static float Duration = 0f;
+        public static float MaxIntensity { get; private set; } = 1f;
+        public static float MaxDuration { get; private set; } = 1f;
+        public static float Intensity = 1f;
+        public static float Duration = 1f;
         #endregion
 
         /* FUNCTIONS */
         #region FUNCTIONS
         /// <summary>
-        /// Configure the PiShock API
+        /// Configure the PiShock API.
         /// </summary>
-        /// <param name="PiShockAccountName">The PiShock account name you made when you created an account</param>
-        /// <param name="YourName">Your username, handle, real name, etc</param>
-        /// <param name="ShareCode">The share code for the shocker</param>
-        /// <param name="Key">The API key for your account</param>
+        /// <param name="PiShockAccountName">The PiShock account name you made when you created an account.</param>
+        /// <param name="YourName">Your username, handle, real name, etc.</param>
+        /// <param name="ShareCode">The share code for the shocker.</param>
+        /// <param name="Key">The API key for your account.</param>
         public static void Configure(string PiShockAccountName, string YourName, string ShareCode, string Key)
         {
             // Set the API configuration variables
@@ -103,10 +104,10 @@ namespace Electra
         }
 
         /// <summary>
-        /// Update the maximum intensity and duration values
+        /// Update the maximum intensity and duration values.
         /// </summary>
-        /// <param name="Intensity">The maximum operation intensity</param>
-        /// <param name="Duration">The maximum operation duration</param>
+        /// <param name="Intensity">The maximum operation intensity.</param>
+        /// <param name="Duration">The maximum operation duration.</param>
         public static void UpdateMaximums(int Intensity, int Duration)
         {
             // Set the maximum intensity and duration values
@@ -117,7 +118,7 @@ namespace Electra
         }
 
         /// <summary>
-        /// Update the shocker information class
+        /// Update the shocker information class.
         /// </summary>
         public static void UpdateShockerInfo()
         {
@@ -156,7 +157,7 @@ namespace Electra
             }
             catch(Exception ex)
             {
-                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}", "Electra - Error", 16);
+                SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"An error has occurred.\n\n{ex.Message}\n\nStack trace: {ex.StackTrace}", 0);
             }
 
             // Set the mouse cursor
@@ -164,11 +165,11 @@ namespace Electra
         }
 
         /// <summary>
-        /// Send a command to the PiShock API or serial
+        /// Send a command to the hub via the PiShock API or serial.
         /// </summary>
-        /// <param name="Intensity">The intensity of the operation</param>
-        /// <param name="Duration">The duration of the operation</param>
-        /// <param name="Command">The operation to perform</param>
+        /// <param name="Intensity">The intensity of the operation.</param>
+        /// <param name="Duration">The duration of the operation.</param>
+        /// <param name="Command">The operation to perform.</param>
         public static void SendCommand(float Intensity, float Duration, CommandType Command)
         {
             // Set the mouse cursor
@@ -212,7 +213,7 @@ namespace Electra
             }
             catch (Exception ex)
             {
-                Program.MessageBox(0, $"An error has occurred.\n\n{ex.Message}\n\nStack trace: {ex.StackTrace}", "Electra - Error", 16);
+                SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"An error has occurred.\n\n{ex.Message}\n\nStack trace: {ex.StackTrace}", 0);
             }
 
             // Set the mouse cursor
@@ -220,10 +221,10 @@ namespace Electra
         }
 
         /// <summary>
-        /// Parse the result that the PiShock API sent back, if it sent a response at all
+        /// Parse the result that the PiShock API sent back, if it sent a response at all.
         /// </summary>
-        /// <param name="Result">The string that the API sent</param>
-        /// <returns></returns>
+        /// <param name="Result">The JSON string that the API sent.</param>
+        /// <returns>Returns true if the operation succeeded, and false if there was an error..</returns>
         public static bool ParseAPIResult(string Result)
         {
             // Get the API return code
@@ -237,39 +238,39 @@ namespace Electra
             switch (Result)
             {
                 case "This code doesn't exist.":
-                    Program.MessageBox(0, $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"This share code \"{PiShockAPI.APIConfig.Code}\" doesn't exist.", 0);
                     return false;
 
                 case "Not Authorized.":
-                    Program.MessageBox(0, "The username or API key is incorrect, or your account hasn't been activated yet.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The username or API key is incorrect, or your account hasn't been activated yet.", 0);
                     return false;
 
                 case "Shocker is Paused or does not exist. Unpause to send command.":
-                    Program.MessageBox(0, "This shocker is currently paused, or does not exist.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"This shocker is currently paused, or does not exist.", 0);
                     return false;
 
                 case "Device currently not connected.":
-                    Program.MessageBox(0, "The hub is not connected.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The hub is not connected.", 0);
                     return false;
 
                 case "This share code has already been used by somebody else.":
-                    Program.MessageBox(0, $"The share code \"{PiShockAPI.APIConfig.Code}\" is already in use.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The share code \"{APIConfig.Code}\" is already in use.", 0);
                     return false;
 
                 case "Unknown Op, use 0 for shock, 1 for vibrate and 2 for beep.":
-                    Program.MessageBox(0, $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The operation \"{APIConfig.Op.ToString()}\" is invalid.", 0);
                     return false;
 
                 case "Beep not allowed.":
-                    Program.MessageBox(0, "Beeping has been disabled for this share code.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"Beeping has been disabled for this share code.", 0);
                     return false;
 
                 case "Shock not allowed.":
-                    Program.MessageBox(0, "Shocking has been disabled for this share code.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"Shocking has been disabled for this share code.", 0);
                     return false;
 
                 case "Vibrate not allowed.":
-                    Program.MessageBox(0, "Vibrating has been disabled for this share code.", "Electra - Error", 16);
+                    SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"Vibrating has been disabled for this share code.", 0);
                     return false;
 
                 case "Operation Succeeded.":
@@ -277,13 +278,13 @@ namespace Electra
                     return true;
 
                 default:
-                    if (!string.IsNullOrEmpty(Result))
+                    if (string.IsNullOrEmpty(Result))
                     {
-                        Program.MessageBox(0, $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nRecieved data: {Result}", "Electra - Error", 16);
+                        SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The PiShock API did not respond.\n\nMake sure that:\n  1. Both you and the API are online\n  2. Your JSON configuration is valid", 0);
                     }
                     else
                     {
-                        Program.MessageBox(0, "The PiShock API did not respond.\n\nMake sure that:\n  1. Both you and the API are online\n  2. Your JSON configuration is valid", "Electra - Error", 16);
+                        SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nRecieved data: {Result}", 0);
                     }
                     
                     return false;

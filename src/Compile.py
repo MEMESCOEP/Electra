@@ -3,6 +3,7 @@
 ## IMPORTS ##
 from rich import print as rprint
 from rich.panel import Panel
+from datetime import datetime
 import rich.table
 import subprocess
 import traceback
@@ -13,7 +14,7 @@ import os
 
 ## VARIABLES ##
 OutputPath = "./Electra/bin/Debug/net8.0/"
-StartTime = time.time()
+StartTime = datetime.now()
 
 ## FUNCTIONS ##
 def BuildFailure(ReturnCode):
@@ -21,14 +22,14 @@ def BuildFailure(ReturnCode):
     rprint(Panel.fit("[red]🛑 BUILD FAILED! 🛑[/red]", style="bold"))
     rprint(f"[red]Build failed: {ReturnCode}.[/red]")
 
-    if ReturnCode.isnumeric():
+    if str(ReturnCode).isnumeric():
         exit(ReturnCode)
 
     else:
         exit(-1)
 
 def StartProcess(Process):
-    Child = subprocess.Popen(Process.split())
+    Child = subprocess.Popen(Process.split(' '))
     Child.wait()
     ReturnCode = Child.poll()
     
@@ -37,6 +38,8 @@ def StartProcess(Process):
 
 ## MAIN CODE ##
 try:
+    print(f"[INFO] >> Build started at {StartTime}\n\n")
+    
     # Compile the DOTNET portion of Electra
     rprint(Panel.fit("[blue]🔧 COMPILING C# 🔧[/blue]", style="bold"))
     print("[INFO] >> Running dotnet...")
@@ -76,10 +79,9 @@ try:
     os.remove("./GetCOMName.spec")
     shutil.rmtree("./build")
     shutil.rmtree("./dist")
-
     print("\n\n")
     rprint(Panel.fit("[green]✅ BUILD SUCCEEDED ✅[/green]", style="bold"))
-    print(f"[INFO] >> Build finished in {time.time() - StartTime} seconds.")
+    print(f"[INFO] >> Build finished.\n\tBuild start time: {StartTime}\n\tBuild finish time: {datetime.now()}\n\tTotal build time: {datetime.now() - StartTime}.")
     
 except Exception as EX:
     rprint(f"[red]{traceback.format_exc()}[/red]")

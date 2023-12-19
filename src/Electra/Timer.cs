@@ -32,7 +32,7 @@ namespace Electra
         /* FUNCTIONS */
         #region FUNCTIONS
         /// <summary>
-        /// Start the timer
+        /// Start the timer.
         /// </summary>
         public void Start()
         {
@@ -42,7 +42,7 @@ namespace Electra
         }
 
         /// <summary>
-        /// Stop the timer
+        /// Stop the timer.
         /// </summary>
         public void Stop()
         {
@@ -51,7 +51,7 @@ namespace Electra
         }
 
         /// <summary>
-        /// Reset the timer
+        /// Reset the timer.
         /// </summary>
         public void Reset()
         {
@@ -65,7 +65,7 @@ namespace Electra
         }
 
         /// <summary>
-        /// Update the timer
+        /// Update the timer.
         /// </summary>
         public void Update()
         {
@@ -82,18 +82,18 @@ namespace Electra
         }
 
         /// <summary>
-        /// Check if the timer is done
+        /// Check if the timer is done.
         /// </summary>
-        /// <returns>Returns true if finished and false if not finished</returns>
+        /// <returns>Returns true if finished and false if not finished.</returns>
         public bool TimerDone()
         {
             return TimeUntilDone <= 0 && TimerStarted;
         }
 
         /// <summary>
-        /// Get the elapsed time since the timer was started
+        /// Get the elapsed time since the timer was started.
         /// </summary>
-        /// <returns>Returns tehe elapsed time since the timer was started</returns>
+        /// <returns>Returns tehe elapsed time since the timer was started.</returns>
         public double GetElapsed()
         {
             return TimerStartTime - TimeUntilDone;
