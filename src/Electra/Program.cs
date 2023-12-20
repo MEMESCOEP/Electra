@@ -122,19 +122,23 @@ namespace Electra
             try
             {
                 // Set up a handler for uncaught exceptions. This will most likely not handle Raylib errors
+                Console.WriteLine("[INFO] >> Setting up exception handler...");
                 CurrentAppDomain.UnhandledException += new UnhandledExceptionEventHandler(CrashSafely);
 
                 // Get the screen dimensions
+                Console.WriteLine("[INFO] >> Getting screen dimensions...");
                 ScreenWidth = SharpHook.Native.UioHook.CreateScreenInfo()[0].Width;
                 ScreenHeight = SharpHook.Native.UioHook.CreateScreenInfo()[0].Height;
 
                 // Make sure the configuration file exists
+                Console.WriteLine("[INFO] >> Making sure config exists...");
                 if (!File.Exists(ConfigPath))
                 {
                     throw new FileNotFoundException("The configuration file could not be found.");
                 }
 
                 // Read the JSON configuration file
+                Console.WriteLine("[INFO] >> Testing config keys...");
                 JObject ConfigData = JObject.Parse(File.ReadAllText(ConfigPath));
                 JArray ShareCodeArray = (JArray)ConfigData["ShareCodes"];
 
@@ -148,6 +152,7 @@ namespace Electra
                 }
 
                 // Enable/Disable VSync and apply FPS limits if required
+                Console.WriteLine("[INFO] >> Applying configuration...");
                 UseStationaryFPSLimit = ConfigData.SelectToken("UseStationaryFPSLimit").Value<bool>();
                 UseDraggingFPSLimit = ConfigData.SelectToken("UseDraggingFPSLimit").Value<bool>();
                 EnableVerticalSync = ConfigData.SelectToken("EnableVSync").Value<bool>();
@@ -158,6 +163,7 @@ namespace Electra
                 DiscordRPC.Initialize(ConfigData["DiscordAppID"].ToString());
 
                 // Load images
+                Console.WriteLine("[INFO] >> Loading images...");
                 IntensityIcon = Raylib.LoadImage(IntensityIconPath);
                 DurationIcon = Raylib.LoadImage(DurationIconPath);
                 TitlebarLogo = Raylib.LoadImage(Logo32Path);
@@ -169,6 +175,7 @@ namespace Electra
                     // Find the COM port of the PiShock hub if serial is enabled
                     try
                     {
+                        Console.WriteLine("[INFO] >> Initializing serial...");
                         Serial.Initialize(Serial.GetCOMPort(), ConfigData.SelectToken("MaxIntensitySerial").Value<int>(), ConfigData.SelectToken("MaxDurationSerial").Value<int>(), SerialWriteTimeout, SerialReadTimeout, ConfigData.SelectToken("SerialShockerID").Value<int>());
                     }
                     catch (Exception ex)
@@ -182,6 +189,7 @@ namespace Electra
                 }
                 else
                 {
+                    Console.WriteLine("[INFO] >> Initializing PiShock API...");
                     PiShockAPI.Configure(ConfigData["PiShockAccountName"].ToString(), ConfigData["YourName"].ToString(), ShareCodeArray[0].ToString(), ConfigData["APIKey"].ToString());
                 }
             }
@@ -195,10 +203,12 @@ namespace Electra
             }
 
             // Assign the mouse hook events
+            Console.WriteLine("[INFO] >> Setting up mouse handler...");
             MouseHook.MouseDragged += OnMouseMoved;
             MouseHook.MouseMoved += OnMouseMoved;
 
             // Set the window flags
+            Console.WriteLine("[INFO] >> Setting uwindow flags...");
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
             Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
 
@@ -208,12 +218,15 @@ namespace Electra
             }
 
             // Create a window and set it's icon
+            Console.WriteLine("[INFO] >> Initializing window...");
             Raylib.InitWindow(WindowWidth, WindowHeight, "Electra");
             Raylib.SetWindowIcon(TaskbarLogo);
 
             // Set the style manually because raylib doesn't seem to want to load a style from the disk properly >:(
             // Everything starting with '0x' is a color, some are unchecked due to uint -> int conversion. And yes, this
             // is probably a shitty way to accomplish this, I just don't know any better ways as of right now
+            Console.WriteLine("[INFO] >> Setting theme...");
+
             // Button
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_NORMAL, 0x024658FF);
             RayGui.GuiSetStyle((int)GuiControl.BUTTON, (int)GuiControlProperty.BASE_COLOR_FOCUSED, 0x3299B4FF);
@@ -252,12 +265,14 @@ namespace Electra
             DragSleepTime = (int)((1f / Raylib.GetMonitorRefreshRate(Raylib.GetCurrentMonitor())) * 1000f) - 1;
 
             // Create textures from images
+            Console.WriteLine("[INFO] >> Creating textures from images...");
             TitlebarLogoTexture = Raylib.LoadTextureFromImage(TitlebarLogo);
             IntensityTexture = Raylib.LoadTextureFromImage(IntensityIcon);
             DurationTexture = Raylib.LoadTextureFromImage(DurationIcon);
 
             // Configure timers
             // Garbage collection timer
+            Console.WriteLine("[INFO] >> Setting up timers...");
             GarbageCollectionTimer.Recurring = true;
             GarbageCollectionTimer.Start();
 
@@ -275,6 +290,7 @@ namespace Electra
             WindowOpened = true;
 
             // Main loop
+            Console.WriteLine("[INFO] >> Init finished.");
             while (!ExitProgram && !Raylib.WindowShouldClose())
             {
                 // Start drawing
@@ -442,8 +458,8 @@ namespace Electra
         /// </summary>
         private static void OnMouseMoved(object? sender, MouseHookEventArgs e)
         {
-            MousePos.X = Math.Clamp(e.Data.X, 0, ScreenWidth);
-            MousePos.Y = Math.Clamp(e.Data.Y, 0, ScreenHeight);
+            MousePos.X = e.Data.X;
+            MousePos.Y = e.Data.Y;
         }
 
         /// <summary>
@@ -464,30 +480,37 @@ namespace Electra
         public static void CloseApplication(int ExitCode)
         {
             // Stop recurring timers
+            Console.WriteLine("[INFO] >> Stopping timers...");
             GarbageCollectionTimer.Stop();
             DiscordRPCUpdateTimer.Stop();
 
             // Close the Discord RPC client
+            Console.WriteLine("[INFO] >> Closing Discord RPC client...");
             DiscordRPC.Close();
 
             // Close the serial port if it's in use
+            Console.WriteLine("[INFO] >> Closing serial if required...");
             Serial.Close();
 
             // Dispose of the mouse hook
+            Console.WriteLine("[INFO] >> Disposing of mouse hook...");
             MouseHook.Dispose();
 
             // Unload assets to prevent memory leaks and/or file errors
+            Console.WriteLine("[INFO] >> Unloading assets...");
             Raylib.UnloadTexture(TitlebarLogoTexture);
             Raylib.UnloadImage(TaskbarLogo);
             Raylib.UnloadImage(TitlebarLogo);
 
             // Close the window
+            Console.WriteLine("[INFO] >> Closing window...");
             if (WindowOpened)
             {
                 Raylib.CloseWindow();
             }
 
             // Exit the application
+            Console.WriteLine("[INFO] >> Exitting...");
             Environment.Exit(ExitCode);
         }
         #endregion

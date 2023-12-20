@@ -162,17 +162,17 @@ namespace Electra
             string SerialData = SP.ReadLine();
 
             // If the received data is an information command, reconfigure
-            if (SerialData.StartsWith("TERMINALINFO:"))
+            /*if (SerialData.StartsWith("TERMINALINFO:"))
             {
                 SerialData = SerialData.Substring(SerialData.IndexOf('{'));
                 var ParsedResult = JObject.Parse(SerialData);
 
-                /*foreach (var Shocker in ParsedResult.SelectToken("shockers"))
+                foreach (var Shocker in ParsedResult.SelectToken("shockers"))
                 {
                     PiShockAPI.ShockerInfo.ID = Shocker.SelectToken("id").Value<int>();
                     PiShockAPI.ShockerInfo.Name = $"Serial ({PiShockAPI.ShockerInfo.ID})";
-                }*/
-            }
+                }
+            }*/
         }
 
         /// <summary>
