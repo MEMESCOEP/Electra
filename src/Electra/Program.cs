@@ -162,6 +162,20 @@ namespace Electra
                 // Set up the discord RPC client
                 DiscordRPC.Initialize(ConfigData["DiscordAppID"].ToString());
 
+                // Set the window flags
+                Console.WriteLine("[INFO] >> Setting uwindow flags...");
+                Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
+                Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
+
+                if (EnableVerticalSync)
+                {
+                    Raylib.SetConfigFlags(ConfigFlags.FLAG_VSYNC_HINT);
+                }
+
+                // Create a window
+                Console.WriteLine("[INFO] >> Initializing window...");
+                Raylib.InitWindow(WindowWidth, WindowHeight, "Electra");
+
                 // Load images
                 Console.WriteLine("[INFO] >> Loading images...");
                 IntensityIcon = Raylib.LoadImage(IntensityIconPath);
@@ -207,19 +221,7 @@ namespace Electra
             MouseHook.MouseDragged += OnMouseMoved;
             MouseHook.MouseMoved += OnMouseMoved;
 
-            // Set the window flags
-            Console.WriteLine("[INFO] >> Setting uwindow flags...");
-            Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
-            Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
-
-            if (EnableVerticalSync)
-            {
-                Raylib.SetConfigFlags(ConfigFlags.FLAG_VSYNC_HINT);
-            }
-
-            // Create a window and set it's icon
-            Console.WriteLine("[INFO] >> Initializing window...");
-            Raylib.InitWindow(WindowWidth, WindowHeight, "Electra");
+            // Set the window icon
             Raylib.SetWindowIcon(TaskbarLogo);
 
             // Set the style manually because raylib doesn't seem to want to load a style from the disk properly >:(
