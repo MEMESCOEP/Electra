@@ -6,12 +6,18 @@ For compilation instructions, look [here](https://github.com/MEMESCOEP/Electra/b
 Supported operating systems:
 | Operating System | Supported |
 | :---: | :---: |
-| Windows | ✅ |
-| MacOS | ❌ |
-| Linux | ❌ |
+| Windows (10 or later) | ✅ |
+| MacOS | 🚧 |
+| Linux | 🚧 |
 
 > [!NOTE]
-> I do plan on adding Linux support, I just need to remove Windows libraries and dependencies.
+> Linux and MacOS support is currently being tested. Windows versions below 10 are also being tested.
+
+Requirements:
+* Hardware supporting OpenGL 3.3 or later. Any computer made after 2010 should work.
+
+> [!NOTE]
+> If you don't have hardware that supports OpenGL 3.3 or later, a Mesa3D dll may help.
 
 <br/>
 

@@ -21,4 +21,4 @@ All of the information outlined in the [Required Information](#required-informat
 
 Make sure to populate the required fields correctly! In the future, I'll most likely make a way to configure from a GUI.
 
-Electra loads icons at runtime from the `Assets` directory. Copy the `Logo_32x32.png` and `Logo_128x128.png` files from the `Resources` directory to the `Assets` directory.
+Electra loads icons at runtime from the `Assets` directory. Copy the `Logo_32x32.png`, `Logo_128x128.png`, `Intensity.png`, and `Duration.png` files from the `Resources` directory to the `Assets` directory.

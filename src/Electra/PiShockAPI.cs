@@ -63,8 +63,8 @@ namespace Electra
         public static PiShockShockerInfo ShockerInfo = new PiShockShockerInfo();
 
         // Strings
-        private static string APIUrl = "https://do.pishock.com/api/apioperate/";
         private static string APIShockerInfoURL = "https://do.pishock.com/api/GetShockerInfo";
+        private static string APIUrl = "https://do.pishock.com/api/apioperate/";
 
         // HTTP Client(s)
         private static HttpClient HTTP = new HttpClient();
@@ -157,7 +157,7 @@ namespace Electra
             }
             catch(Exception ex)
             {
-                SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"An error has occurred.\n\n{ex.Message}\n\nStack trace: {ex.StackTrace}", 0);
+                SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Refresh Error", $"An error has occurred.\n\n{ex.Message}\n\nStack trace: {ex.StackTrace}\n\nInner exception: {ex.InnerException}", 0);
             }
 
             // Set the mouse cursor
