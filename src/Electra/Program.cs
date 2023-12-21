@@ -46,9 +46,7 @@ namespace Electra
         private static int SerialReadTimeout = 5000;
         private static int DragSleepTime = 0;
         private static int WindowHeight = 400;
-        private static int ScreenHeight = 0;
         private static int WindowWidth = 450;
-        private static int ScreenWidth = 0;
 
         // Floats
         private static float DragOffsetX = 1f;
@@ -124,11 +122,6 @@ namespace Electra
                 // Set up a handler for uncaught exceptions. This will most likely not handle Raylib errors
                 Console.WriteLine("[INFO] >> Setting up exception handler...");
                 CurrentAppDomain.UnhandledException += new UnhandledExceptionEventHandler(CrashSafely);
-
-                // Get the screen dimensions
-                Console.WriteLine("[INFO] >> Getting screen dimensions...");
-                ScreenWidth = SharpHook.Native.UioHook.CreateScreenInfo()[0].Width;
-                ScreenHeight = SharpHook.Native.UioHook.CreateScreenInfo()[0].Height;
 
                 // Make sure the configuration file exists
                 Console.WriteLine("[INFO] >> Making sure config exists...");

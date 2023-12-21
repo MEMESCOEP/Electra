@@ -45,7 +45,7 @@ try:
     print("[INFO] >> Running dotnet...")
     StartProcess("dotnet build")
 
-    # Compile the python portion of Electra, The file extension will be changed to ".pye" for easy cross platform compatibility
+    # Compile the python portion of Electra. The file extension will be changed to ".pye" for easy cross platform compatibility
     print("\n\n")
     rprint(Panel.fit("[blue]🔧 COMPILING PYTHON 🔧[/blue]", style="bold"))
     if platform.system() == "Windows":
