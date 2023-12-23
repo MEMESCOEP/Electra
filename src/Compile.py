@@ -4,17 +4,16 @@
 from rich import print as rprint
 from rich.panel import Panel
 from datetime import datetime
-import rich.table
 import subprocess
 import traceback
 import platform
 import shutil
-import time
 import os
 
 ## VARIABLES ##
-OutputPath = "./Electra/bin/Debug/net8.0/"
+OutputPath = "./Electra/bin/Build/"
 StartTime = datetime.now()
+CWD = os.getcwd()
 
 ## FUNCTIONS ##
 def BuildFailure(ReturnCode):
@@ -38,16 +37,37 @@ def StartProcess(Process):
 
 ## MAIN CODE ##
 try:
-    print(f"[INFO] >> Build started at {StartTime}\n\n")
+    print(f"[INFO] >> Build started at {StartTime}")
+    print(f"[INFO] >> Current working directory is: {CWD}\n\n")
+
+    if os.path.exists(OutputPath):
+        rprint(Panel.fit("[blue]✨ CLEANING BUILD DIRECTORY ✨[/blue]", style="bold"))        
+        os.chdir(os.path.abspath(OutputPath))
+
+        for Item in os.listdir('.'):
+            if os.path.basename(Item) == "Assets" and os.path.isdir(Item):
+                continue
+            
+            if os.path.isdir(Item):
+                print(f"[INFO] >> Removing directory \"{Item}\"...")
+                shutil.rmtree(Item)
+        
+            else:
+                print(f"[INFO] >> Removing file \"{Item}\"...")
+                os.remove(Item)
+
+        os.chdir(CWD)
     
     # Compile the DOTNET portion of Electra
+    print("\n\n")
     rprint(Panel.fit("[blue]🔧 COMPILING C# 🔧[/blue]", style="bold"))
     print("[INFO] >> Running dotnet...")
-    StartProcess("dotnet build")
+    StartProcess(f"dotnet build -o {OutputPath} -v normal")
 
     # Compile the python portion of Electra. The file extension will be changed to ".pye" for easy cross platform compatibility
     print("\n\n")
     rprint(Panel.fit("[blue]🔧 COMPILING PYTHON 🔧[/blue]", style="bold"))
+
     if platform.system() == "Windows":
         print("[INFO] >> Running pyinstaller on \"Windows\"...")
         StartProcess("pyinstaller --onefile ./Electra/GetCOMName.py")

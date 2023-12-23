@@ -36,7 +36,7 @@ Before compiling Electra, you need to set up a build environment. You'll need to
 
 ## Compilation
 > [!NOTE]
-> The output directory where the final binary and DLLs will be located is `bin/Debug/net8.0/` or `bin/Release/net8.0/`.
+> The output directory where the final binary and DLLs will be located is `bin/Build/`.
 
 ### The Easy Way
 The easiest way to compile is to use the `Compile.py` script, because it takes care of all build steps for you. All you need to do is run the script.

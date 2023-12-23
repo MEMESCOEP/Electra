@@ -35,7 +35,6 @@ namespace Electra
     {
         public string? Name { get; set; } = "NO SHOCKER INFO";
         public bool? IsPaused { get; set; } = false;
-        public bool? IsOnline { get; set; } = false;
         public float? MaxIntensity { get; set; } = 1f;
         public float? MaxDuration { get; set; } = 1f;
         public int? ID { get; set; } = 0;
@@ -149,7 +148,6 @@ namespace Electra
 
                         // Update the shocker information class
                         ShockerInfo.IsPaused = ParsedResult.SelectToken("paused").Value<bool>();
-                        ShockerInfo.IsOnline = ParsedResult.SelectToken("online").Value<bool>();
                         ShockerInfo.Name = ParsedResult.SelectToken("name").Value<string>();
                         ShockerInfo.ID = ParsedResult.SelectToken("id").Value<int>();
                     }
@@ -284,7 +282,7 @@ namespace Electra
                     }
                     else
                     {
-                        SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nRecieved data: {Result}", 0);
+                        SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_ERROR, "Electra - Error", $"The PiShock API has sent an invalid response. Make sure that your JSON configuration is valid.\n\nReceived data: {Result}", 0);
                     }
                     
                     return false;
