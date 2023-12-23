@@ -296,10 +296,11 @@ namespace Electra
                 {
                     DragOffsetX = Math.Abs(Raylib.GetWindowPosition().X - MousePos.X);
                     DragOffsetY = Math.Abs(Raylib.GetWindowPosition().Y - MousePos.Y);
-                    Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_ALL);
-                    RayGui.GuiLock();
                     DragLockTimer.Reset();
                     DragLock = true;
+
+                    Raylib.SetMouseCursor(MouseCursor.MOUSE_CURSOR_RESIZE_ALL);
+                    RayGui.GuiLock();
                 }
 
                 // Move the window if the user is dragging it
