@@ -1,10 +1,10 @@
 ﻿/* DIRECTIVES */
 #region DIRECTIVES
-using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
 using Raylib_CsLo;
 using SharpHook;
 using SDL2;
+using System.Numerics;
 #endregion
 
 /* NAMESPACES */
@@ -42,6 +42,14 @@ namespace Electra
         public static bool EnableSerial = true;
 
         // Integers
+        private static int DPIPercentageOf13;
+        private static int DPIPercentageOf16;
+        private static int DPIPercentageOf20;
+        private static int DPIPercentageOf24;
+        private static int DPIPercentageOf32;
+        private static int DPIPercentageOf48;
+        private static int DPIPercentageOf64;
+        private static int DPIPercentageOf96;
         private static int SerialWriteTimeout = 5000;
         private static int SerialReadTimeout = 5000;
         private static int DragSleepTime = 0;
@@ -59,6 +67,7 @@ namespace Electra
         private static System.Drawing.Point MousePos = new System.Drawing.Point(0, 0);
 
         // Rectangles
+        private static Rectangle DPITargetScaleRect;
         private static Rectangle IntensityRect = new Rectangle(16, 224, WindowWidth - 72, 16);
         private static Rectangle DurationRect = new Rectangle(16, 244, WindowWidth - 72, 16);
         private static Rectangle MinimizeRect = new Rectangle(WindowWidth - 96, 0, 48, 48);
@@ -91,9 +100,11 @@ namespace Electra
         private static Color BGColor = new Color(18, 18, 18, 255);
 
         // Timers
-        private static Timer GarbageCollectionTimer = new Timer(5, new Action(() => GC.Collect()));
-        private static Timer DiscordRPCUpdateTimer = new Timer(1, new Action(() => DiscordRPC.UpdateRPC()));
-        private static Timer DragLockTimer = new Timer(0.1, new Action(() => RayGui.GuiUnlock()));
+        private static Timer GarbageCollectionTimer = new Timer(5, new Action(GC.Collect));
+        private static Timer DiscordRPCUpdateTimer = new Timer(1, new Action(DiscordRPC.UpdateRPC));
+        private static Timer DPIUpdateTimer = new Timer(0.1, new Action(() => UpdateWindowDPI()));
+
+        private static Timer DragLockTimer = new Timer(0.1, new Action(RayGui.GuiUnlock));
 
         // Strings
         private static string IntensityIconPath = @"Assets/Intensity.png";
@@ -107,6 +118,13 @@ namespace Electra
 
         // App domain(s)
         private static AppDomain CurrentAppDomain = AppDomain.CurrentDomain;
+
+        // Render textures
+        private static RenderTexture TargetRenderTexture;
+
+        // 2D vectors
+        private static Vector2 ScaledWindowSize;
+        private static Vector2 WindowDPI;
 
         #endregion
 
@@ -156,9 +174,8 @@ namespace Electra
                 DiscordRPC.Initialize(ConfigData["DiscordAppID"].ToString());
 
                 // Set the window flags
-                Console.WriteLine("[INFO] >> Setting uwindow flags...");
-                Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED);
-                Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
+                Console.WriteLine("[INFO] >> Setting window flags...");
+                Raylib.SetConfigFlags(ConfigFlags.FLAG_WINDOW_UNDECORATED | ConfigFlags.FLAG_WINDOW_ALWAYS_RUN);
 
                 if (EnableVerticalSync)
                 {
@@ -167,7 +184,25 @@ namespace Electra
 
                 // Create a window
                 Console.WriteLine("[INFO] >> Initializing window...");
-                Raylib.InitWindow(WindowWidth, WindowHeight, "Electra");
+                Raylib.InitWindow(96, 32, "Electra");
+
+                // Update the window so the user knows that the program is loading
+                Raylib.BeginDrawing();
+                Raylib.DrawText("Loading...", 0, 0, 20, Raylib.GOLD);
+                Raylib.EndDrawing();
+
+                // Get the monitor's DPI so we can properly scale the window
+                WindowDPI = Raylib.GetWindowScaleDPI();
+
+                // Calcutale percentages
+                DPIPercentageOf13 = (int)MathUtilities.GetPercentageOfNumber(13, WindowDPI[0] * 100);
+                DPIPercentageOf16 = (int)MathUtilities.GetPercentageOfNumber(16, WindowDPI[0] * 100);
+                DPIPercentageOf20 = (int)MathUtilities.GetPercentageOfNumber(20, WindowDPI[0] * 100);
+                DPIPercentageOf24 = (int)MathUtilities.GetPercentageOfNumber(24, WindowDPI[0] * 100);
+                DPIPercentageOf32 = (int)MathUtilities.GetPercentageOfNumber(32, WindowDPI[0] * 100);
+                DPIPercentageOf48 = (int)MathUtilities.GetPercentageOfNumber(48, WindowDPI[0] * 100);
+                DPIPercentageOf64 = (int)MathUtilities.GetPercentageOfNumber(64, WindowDPI[0] * 100);
+                DPIPercentageOf96 = (int)MathUtilities.GetPercentageOfNumber(96, WindowDPI[0] * 100);
 
                 // Load images
                 Console.WriteLine("[INFO] >> Loading images...");
@@ -176,6 +211,16 @@ namespace Electra
                 TitlebarLogo = Raylib.LoadImage(Logo32Path);
                 TaskbarLogo = Raylib.LoadImage(Logo128Path);
 
+                // Set up a render texture
+                TargetRenderTexture = Raylib.LoadRenderTexture(WindowWidth, WindowHeight);
+
+                // Configure textures
+                Raylib.SetTextureFilter(TargetRenderTexture.texture, TextureFilter.TEXTURE_FILTER_POINT);
+
+                // Configure rendering rectangles
+                DPITargetScaleRect = new Rectangle(0f, 0f, WindowWidth * WindowDPI[0], WindowHeight * WindowDPI[1]);
+                //FinalRenderRect = new Rectangle(0f, 0f, TargetRenderTexture.texture.width, -TargetRenderTexture.texture.height);
+                
                 // Configure the PiShock API. If serial is enabled, use settings in the JSON configuration 
                 if (EnableSerial)
                 {
@@ -276,7 +321,11 @@ namespace Electra
             {
                 DiscordRPCUpdateTimer.Recurring = true;
                 DiscordRPCUpdateTimer.Start();
-            }                
+            }
+
+            // Screen DPI timer
+            DPIUpdateTimer.Recurring = true;
+            DPIUpdateTimer.Start();
 
             // Run the mouse hook asynchronously
             MouseHook.RunAsync();
@@ -290,6 +339,7 @@ namespace Electra
             {
                 // Start drawing
                 Raylib.BeginDrawing();
+                //Raylib.BeginTextureMode(TargetRenderTexture);
 
                 // Check if the user is dragging the window
                 if (!DragLock && Raylib.CheckCollisionPointRec(Raylib.GetMousePosition(), DragRect) && Raylib.IsMouseButtonPressed(0))
@@ -335,10 +385,19 @@ namespace Electra
                 // Update timers
                 GarbageCollectionTimer.Update();
                 DiscordRPCUpdateTimer.Update();
+                DPIUpdateTimer.Update();
                 DragLockTimer.Update();
 
                 // Draw window elements
                 UpdateScreen();
+
+                // Exit render texture mode
+                //Raylib.EndTextureMode();
+                
+                DPITargetScaleRect.width = ScaledWindowSize[0];
+                DPITargetScaleRect.height = ScaledWindowSize[1];
+
+                //Raylib.DrawTexturePro(TargetRenderTexture.texture, FinalRenderRect, DPITargetScaleRect, Vector2.Zero, 0f, Raylib.WHITE);
 
                 // Stop drawing
                 Raylib.EndDrawing();
@@ -355,7 +414,7 @@ namespace Electra
         {
             // Clear the window and draw the titlebar
             Raylib.ClearBackground(BGColor);
-            Raylib.DrawRectangle(0, 0, WindowWidth, 48, TitlebarColor);
+            Raylib.DrawRectangle(0, 0, (int)ScaledWindowSize[0], (int)MathUtilities.GetPercentageOfNumber(48, WindowDPI[0] * 100), TitlebarColor);
 
             // Get the intensity and duration from the sliders
             PiShockAPI.Intensity = (int)RayGui.GuiSlider(IntensityRect, null, $"    {PiShockAPI.Intensity}%", PiShockAPI.Intensity, 1, PiShockAPI.MaxIntensity);
@@ -395,11 +454,11 @@ namespace Electra
                 }
                 else if(Raylib.IsMouseButtonDown(0))
                 {
-                    Raylib.DrawRectangle(WindowWidth - 48, 0, 48, 48, ClosePressedColor);
+                    Raylib.DrawRectangle((int)ScaledWindowSize[0] - DPIPercentageOf48, 0, DPIPercentageOf48, DPIPercentageOf48, ClosePressedColor);
                 }
                 else
                 {
-                    Raylib.DrawRectangle(WindowWidth - 48, 0, 48, 48, CloseNormalColor);
+                    Raylib.DrawRectangle((int)ScaledWindowSize[0] - DPIPercentageOf48, 0, DPIPercentageOf48, DPIPercentageOf48, CloseNormalColor);
                 }
             }
 
@@ -412,41 +471,42 @@ namespace Electra
                 }
                 else if (Raylib.IsMouseButtonDown(0))
                 {
-                    Raylib.DrawRectangle(WindowWidth - 96, 0, 48, 48, MinimizePressedColor);
+                    Raylib.DrawRectangle((int)ScaledWindowSize[0] - DPIPercentageOf96, 0, DPIPercentageOf48, DPIPercentageOf48, MinimizePressedColor);
                 }
                 else
                 {
-                    Raylib.DrawRectangle(WindowWidth - 96, 0, 48, 48, MinimizeNormalColor);
+                    Raylib.DrawRectangle((int)ScaledWindowSize[0] - DPIPercentageOf96, 0, DPIPercentageOf48, DPIPercentageOf48, MinimizeNormalColor);
                 }
             }
 
-            // Draw the shocker information
+            // Draw the shocker information.
             Raylib.DrawRectangleLinesEx(InfoRect, 2, Raylib.GetColor(0x2F7486FF));
-            Raylib.DrawRectangle(18, 270, WindowWidth - 36, 110, Raylib.GetColor(0x024658FF));
+            Raylib.DrawRectangle(18, 270, (int)ScaledWindowSize[0] - 36, 110, Raylib.GetColor(0x024658FF));
             Raylib.DrawText($"{PiShockAPI.ShockerInfo.Name}:", 22, 274, 20, Raylib.GOLD);
             Raylib.DrawText($"    ID: {PiShockAPI.ShockerInfo.ID}", 22, 294, 20, Raylib.GOLD);
             Raylib.DrawText($"    Paused: {PiShockAPI.ShockerInfo.IsPaused}", 22, 314, 20, Raylib.GOLD);
             Raylib.DrawText($"    Max int & dur: {PiShockAPI.ShockerInfo.MaxIntensity}, {PiShockAPI.ShockerInfo.MaxDuration}", 22, 334, 20, Raylib.GOLD);
             Raylib.DrawText($"    Share code: {PiShockAPI.APIConfig.Code}", 22, 354, 20, Raylib.GOLD);
 
-            // Draw the titlebar decorations
-            // Title & Icon
-            Raylib.DrawText("Electra", 40, 14, 20, Raylib.GOLD);
+            // Draw the titlebar decorations.
+            // Title & Icon.
+            Raylib.DrawText("Electra", 40, 14, DPIPercentageOf20, Raylib.GOLD);
             Raylib.DrawTexture(TitlebarLogoTexture, 6, 6, Raylib.WHITE);
 
-            // Close button
-            Raylib.DrawRectangle(418, 16, 16, 16, Raylib.RED);
-            Raylib.DrawText("x", 421, 13, 20, Raylib.WHITE);
+            // Close button.
+            //16 + (int)Math.Ceiling(WindowDPI[1] - 1f)
+            Raylib.DrawRectangle((int)ScaledWindowSize[0] - DPIPercentageOf32, DPIPercentageOf16, DPIPercentageOf16, DPIPercentageOf16, Raylib.RED);
+            Raylib.DrawText("x", (int)ScaledWindowSize[0] - (int)MathUtilities.GetPercentageOfNumber(29, WindowDPI[0] * 100), DPIPercentageOf13, DPIPercentageOf20, Raylib.WHITE);
 
-            // Minimize button
-            Raylib.DrawLine(WindowWidth - 80, 24, WindowWidth - 64, 24, Raylib.WHITE);
+            // Minimize button.
+            Raylib.DrawLine((int)ScaledWindowSize[0] - (int)MathUtilities.GetPercentageOfNumber(80, WindowDPI[0] * 100), DPIPercentageOf24, (int)ScaledWindowSize[0] - DPIPercentageOf64, DPIPercentageOf24, Raylib.WHITE);
 
-            // Draw textures
-            Raylib.DrawTexture(IntensityTexture, 396, 225, Raylib.WHITE);
-            Raylib.DrawTexture(DurationTexture, 396, 244, Raylib.WHITE);
+            // Draw textures.
+            Raylib.DrawTexture(IntensityTexture, (int)ScaledWindowSize[0] - 54, 225, Raylib.WHITE);
+            Raylib.DrawTexture(DurationTexture, (int)ScaledWindowSize[0] - 54, 244, Raylib.WHITE);
 
-            // Draw the window border
-            Raylib.DrawRectangleLines(0, 0, WindowWidth, WindowHeight, BorderColor);
+            // Draw the window border.
+            Raylib.DrawRectangleLines(0, 0, (int)ScaledWindowSize[0], (int)ScaledWindowSize[1], BorderColor);
         }
 
         /// <summary>
@@ -470,42 +530,83 @@ namespace Electra
         }
 
         /// <summary>
+        /// Update the DPI scale vector and resize the window if required.
+        /// </summary>
+        private static void UpdateWindowDPI()
+        {
+            // Update the DPI scale.
+            WindowDPI = Raylib.GetWindowScaleDPI();
+            ScaledWindowSize = new Vector2(WindowWidth * WindowDPI[0], WindowHeight * WindowDPI[1]);
+
+            // Scale the window with the DPI.
+            Raylib.SetWindowSize((int)ScaledWindowSize[0], (int)ScaledWindowSize[1]);
+
+            if (Raylib.GetKeyPressed() != 0)
+            {
+                SDL.SDL_ShowSimpleMessageBox(SDL.SDL_MessageBoxFlags.SDL_MESSAGEBOX_INFORMATION, "GUH!!!!!!!!11!1!!1", $"Size: {Raylib.GetScreenWidth()}x{Raylib.GetScreenHeight()}\nUnscaled DPI: {WindowDPI}\nScaled window size: {ScaledWindowSize}", 0);
+            }
+
+            // Update percentages.
+            DPIPercentageOf13 = (int)MathUtilities.GetPercentageOfNumber(13, WindowDPI[0] * 100);
+            DPIPercentageOf16 = (int)MathUtilities.GetPercentageOfNumber(16, WindowDPI[0] * 100);
+            DPIPercentageOf20 = (int)MathUtilities.GetPercentageOfNumber(20, WindowDPI[0] * 100);
+            DPIPercentageOf24 = (int)MathUtilities.GetPercentageOfNumber(24, WindowDPI[0] * 100);
+            DPIPercentageOf32 = (int)MathUtilities.GetPercentageOfNumber(32, WindowDPI[0] * 100);
+            DPIPercentageOf48 = (int)MathUtilities.GetPercentageOfNumber(48, WindowDPI[0] * 100);
+            DPIPercentageOf64 = (int)MathUtilities.GetPercentageOfNumber(64, WindowDPI[0] * 100);
+            DPIPercentageOf96 = (int)MathUtilities.GetPercentageOfNumber(96, WindowDPI[0] * 100);
+
+            // Recalculate rectangle sizes.
+            IntensityRect = new Rectangle(16, 224, ScaledWindowSize[0] - 72f, DPIPercentageOf16);
+            DurationRect = new Rectangle(16, 244, ScaledWindowSize[0] - 72f, DPIPercentageOf16);
+            MinimizeRect = new Rectangle(ScaledWindowSize[0] - DPIPercentageOf96, 0, DPIPercentageOf48, DPIPercentageOf48);
+            RefreshRect = new Rectangle(16, 184, ScaledWindowSize[0] - 32, DPIPercentageOf32);
+            VibrateRect = new Rectangle(16, 104, ScaledWindowSize[0] - 32, DPIPercentageOf32);
+            CloseRect = new Rectangle(ScaledWindowSize[0] - DPIPercentageOf48, 0, DPIPercentageOf48, DPIPercentageOf48);
+            ShockRect = new Rectangle(16, 144, ScaledWindowSize[0] - 32, DPIPercentageOf32);
+            InfoRect = new Rectangle(16, 268, ScaledWindowSize[0] - 32, 114);
+            BeepRect = new Rectangle(16, 64, ScaledWindowSize[0] - 32, DPIPercentageOf32);
+            DragRect = new Rectangle(0, 0, ScaledWindowSize[0] - 96, DPIPercentageOf48);
+    }
+
+        /// <summary>
         /// Safely close the application.
         /// </summary>
         /// <param name="ExitCode">The exit code that the program should use when closing.</param>
         public static void CloseApplication(int ExitCode)
         {
-            // Stop recurring timers
+            // Stop recurring timers.
             Console.WriteLine("[INFO] >> Stopping timers...");
             GarbageCollectionTimer.Stop();
             DiscordRPCUpdateTimer.Stop();
 
-            // Close the Discord RPC client
+            // Close the Discord RPC client.
             Console.WriteLine("[INFO] >> Closing Discord RPC client...");
             DiscordRPC.Close();
 
-            // Close the serial port if it's in use
+            // Close the serial port if it's in use.
             Console.WriteLine("[INFO] >> Closing serial if required...");
             Serial.Close();
 
-            // Dispose of the mouse hook
+            // Dispose of the mouse hook.
             Console.WriteLine("[INFO] >> Disposing of mouse hook...");
             MouseHook.Dispose();
 
-            // Unload assets to prevent memory leaks and/or file errors
+            // Unload assets to prevent memory leaks and/or file errors.
             Console.WriteLine("[INFO] >> Unloading assets...");
+            Raylib.UnloadRenderTexture(TargetRenderTexture);
             Raylib.UnloadTexture(TitlebarLogoTexture);
             Raylib.UnloadImage(TaskbarLogo);
             Raylib.UnloadImage(TitlebarLogo);
 
-            // Close the window
+            // Close the window.
             Console.WriteLine("[INFO] >> Closing window...");
             if (WindowOpened)
             {
                 Raylib.CloseWindow();
             }
 
-            // Exit the application
+            // Exit the application.
             Console.WriteLine("[INFO] >> Exitting...");
             Environment.Exit(ExitCode);
         }

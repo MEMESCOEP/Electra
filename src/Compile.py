@@ -1,8 +1,8 @@
 ### Electra Compilation Script ###
 
 ## IMPORTS ##
-from rich import print as rprint
-from rich.panel import Panel
+from rich.panel import Panel as RPanel
+from rich import print as RPrint
 from datetime import datetime
 import subprocess
 import traceback
@@ -11,15 +11,18 @@ import shutil
 import os
 
 ## VARIABLES ##
+PyInstallerBuildFolder = "./build/"
+PyInstallerDistFolder = "./dist/"
 OutputPath = "./Electra/bin/Build/"
 StartTime = datetime.now()
 CWD = os.getcwd()
 
 ## FUNCTIONS ##
+# Called if/when the build fails
 def BuildFailure(ReturnCode):
     print("\n\n")
-    rprint(Panel.fit("[red]🛑 BUILD FAILED! 🛑[/red]", style="bold"))
-    rprint(f"[red]Build failed: {ReturnCode}.[/red]")
+    RPrint(RPanel.fit("[red]🛑 BUILD FAILED! 🛑[/red]", style="bold"))
+    RPrint(f"[red]Build failed: {ReturnCode}.[/red]")
 
     if str(ReturnCode).isnumeric():
         exit(ReturnCode)
@@ -27,6 +30,7 @@ def BuildFailure(ReturnCode):
     else:
         exit(-1)
 
+# Start a process and wait for its return code
 def StartProcess(Process):
     Child = subprocess.Popen(Process.split(' '))
     Child.wait()
@@ -41,7 +45,7 @@ try:
     print(f"[INFO] >> Current working directory is: {CWD}\n\n")
 
     if os.path.exists(OutputPath):
-        rprint(Panel.fit("[blue]✨ CLEANING BUILD DIRECTORY ✨[/blue]", style="bold"))        
+        RPrint(RPanel.fit("[blue]✨ CLEANING BUILD DIRECTORY ✨[/blue]", style="bold"))        
         os.chdir(os.path.abspath(OutputPath))
 
         for Item in os.listdir('.'):
@@ -60,27 +64,27 @@ try:
     
     # Compile the DOTNET portion of Electra
     print("\n\n")
-    rprint(Panel.fit("[blue]🔧 COMPILING C# 🔧[/blue]", style="bold"))
+    RPrint(RPanel.fit("[blue]🔧 COMPILING C# 🔧[/blue]", style="bold"))
     print("[INFO] >> Running dotnet...")
     StartProcess(f"dotnet build -o {OutputPath} -v normal")
 
-    # Compile the python portion of Electra. The file extension will be changed to ".pye" for easy cross platform compatibility
+    # Compile the PYTHON portion of Electra. The file extension will be changed to ".pye" for easy cross platform compatibility
     print("\n\n")
-    rprint(Panel.fit("[blue]🔧 COMPILING PYTHON 🔧[/blue]", style="bold"))
+    RPrint(RPanel.fit("[blue]🔧 COMPILING PYTHON 🔧[/blue]", style="bold"))
+    print(f"[INFO] >> Running pyinstaller on \"{platform.system()}\"")
 
+    # Run the correct python executable based on the OS
     if platform.system() == "Windows":
-        print("[INFO] >> Running pyinstaller on \"Windows\"...")
         StartProcess("pyinstaller --onefile ./Electra/GetCOMName.py")
 
     else:
-        print(f"[INFO] >> Running pyinstaller on \"{platform.system()}\"")
-        StartProcess("python3 -m PyInstaller --onefile ./Electra/GetCOMName.py -n GetCOMName")
+        StartProcess("python3 -m PyInstaller --onefile ./Electra/GetCOMName.py")
 
     # Do some cleanup (move the binary, delete temp files & dirs)
     print("\n\n")
-    rprint(Panel.fit("[blue]✨ CLEANING UP ✨[/blue]", style="bold"))
+    RPrint(RPanel.fit("[blue]✨ CLEANING UP ✨[/blue]", style="bold"))
 
-    # Find and move the binary to the debug folder
+    # Find and move the binary to the output folder
     Filename = "GetCOMName.exe"
         
     if platform.system() != "Windows":
@@ -88,21 +92,22 @@ try:
         Filename = "GetCOMName"
 
     print("[INFO] >> Checking for binary...")
-    if not os.path.exists(os.path.join("./dist/", Filename)):
+    if not os.path.exists(os.path.join(PyInstallerDistFolder, Filename)):
         raise Exception("Could not find the compiled python binary!")
     
     print("[INFO] >> Moving binary to output folder...")
-    shutil.move(os.path.join("./dist/", Filename), os.path.join(OutputPath, "GetCOMName.pye"))
+    shutil.move(os.path.join(PyInstallerDistFolder, Filename), os.path.join(OutputPath, "GetCOMName.pye"))
 
     # Remove temporary files and directories
     print("[INFO] >> Removing temporary directories and files...")
     os.remove("./GetCOMName.spec")
-    shutil.rmtree("./build")
-    shutil.rmtree("./dist")
+    shutil.rmtree(PyInstallerBuildFolder)
+    shutil.rmtree(PyInstallerDistFolder)
+
     print("\n\n")
-    rprint(Panel.fit("[green]✅ BUILD SUCCEEDED ✅[/green]", style="bold"))
-    print(f"[INFO] >> Build finished.\n\tBuild start time: {StartTime}\n\tBuild finish time: {datetime.now()}\n\tTotal build time: {datetime.now() - StartTime}.")
+    RPrint(RPanel.fit("[green]✅ BUILD SUCCEEDED ✅[/green]", style="bold"))
+    print(f"[INFO] >> Build finished.\n\tBuild start time: {StartTime}\n\tBuild finish time: {datetime.now()}\n\tTotal build time: {datetime.now() - StartTime}")
     
 except Exception as EX:
-    rprint(f"[red]{traceback.format_exc()}[/red]")
+    RPrint(f"[red]{traceback.format_exc()}[/red]")
     BuildFailure(str(EX))
