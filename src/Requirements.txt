@@ -1,0 +1,9 @@
+pyinstaller
+prettyprint
+pypresence
+pyserial
+PySide6
+pillow
+requests
+rich
+termcolor

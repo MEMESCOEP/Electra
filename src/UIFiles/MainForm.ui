@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>330</width>
+    <height>295</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>330</width>
+    <height>295</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>330</width>
+    <height>295</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <strikeout>false</strikeout>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Electra</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../../../../../../../../../../../../../../../../../../home/andrew/.designer/Images/Icon.ico</normaloff>../../../../../../../../../../../../../../../../../../../home/andrew/.designer/Images/Icon.ico</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="Line" name="ControlSeparator">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>100</y>
+      <width>311</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="ShockButton">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>311</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Shock</string>
+    </property>
+    <property name="shortcut">
+     <string/>
+    </property>
+    <property name="checkable">
+     <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="VibrateButton">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>311</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Vibrate</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="BeepButton">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>311</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Beep</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="SettingsButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>230</y>
+      <width>151</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Settings</string>
+    </property>
+   </widget>
+   <widget class="Line" name="ControlSeparator_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>210</y>
+      <width>311</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="APISerialInfoButton">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>230</y>
+      <width>151</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <strikeout>false</strikeout>
+     </font>
+    </property>
+    <property name="text">
+     <string>View API/Serial info</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="IntensityIcon">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>21</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="../ResourceFiles/Resources.qrc">:/Images/Intensity.png</pixmap>
+    </property>
+   </widget>
+   <widget class="QSlider" name="IntensitySlider">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>130</y>
+      <width>311</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>100</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <property name="tickPosition">
+     <enum>QSlider::TicksBothSides</enum>
+    </property>
+    <property name="tickInterval">
+     <number>10</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="IntensityBarLabel">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>110</y>
+      <width>291</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <strikeout>false</strikeout>
+     </font>
+    </property>
+    <property name="text">
+     <string>Intensity (100%):</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="DurationIcon">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>170</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap resource="../ResourceFiles/Resources.qrc">:/Images/Duration.png</pixmap>
+    </property>
+   </widget>
+   <widget class="QLabel" name="DurationBarLabel">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>170</y>
+      <width>291</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+      <strikeout>false</strikeout>
+     </font>
+    </property>
+    <property name="text">
+     <string>Duration (0.1s):</string>
+    </property>
+   </widget>
+   <widget class="QSlider" name="DurationSlider">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>190</y>
+      <width>311</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>150</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <property name="tickPosition">
+     <enum>QSlider::TicksBothSides</enum>
+    </property>
+    <property name="tickInterval">
+     <number>15</number>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="OpenCMDButton">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>260</y>
+      <width>311</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Open command file</string>
+    </property>
+   </widget>
+  </widget>
+  <action name="QuitAction">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+  </action>
+  <action name="ConfigureAction">
+   <property name="text">
+    <string>Configure</string>
+   </property>
+  </action>
+  <action name="ShowConfigAction">
+   <property name="text">
+    <string>View IDs and API keys</string>
+   </property>
+  </action>
+ </widget>
+ <tabstops>
+  <tabstop>ShockButton</tabstop>
+  <tabstop>VibrateButton</tabstop>
+  <tabstop>BeepButton</tabstop>
+  <tabstop>IntensitySlider</tabstop>
+  <tabstop>DurationSlider</tabstop>
+  <tabstop>SettingsButton</tabstop>
+  <tabstop>APISerialInfoButton</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../ResourceFiles/Resources.qrc"/>
+  <include location="../ResourceFiles/Resources.qrc"/>
+  <include location="../ResourceFiles/Resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

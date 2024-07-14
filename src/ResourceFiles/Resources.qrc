@@ -1,0 +1,7 @@
+<RCC>
+  <qresource>
+    <file>../Images/Duration.png</file>
+    <file>../Images/Icon.png</file>
+    <file>../Images/Intensity.png</file>
+  </qresource>
+</RCC>

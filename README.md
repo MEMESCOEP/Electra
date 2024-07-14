@@ -8,16 +8,10 @@ Supported operating systems:
 | :---: | :---: |
 | Windows (10 or later) | ✅ |
 | MacOS | 🚧 |
-| Linux | 🚧 |
+| Linux | ✅ |
 
 > [!NOTE]
-> Linux and MacOS support is currently being tested. Windows versions below 10 are also being tested.
-
-Requirements:
-* Hardware supporting OpenGL 3.3 or later. Any computer made after 2010 should work.
-
-> [!NOTE]
-> If you don't have hardware that supports OpenGL 3.3 or later, a Mesa3D dll may help.
+> Support for Windows versions earlier than 10 is being tested. I don't currently have a Mac to test with.
 
 <br/>
 
@@ -33,6 +27,6 @@ Make yourself familiar with the following guidelines and documentation outlined 
 <br/><br/>
 
 ## ⚠️ Disclaimer ⚠️
-***This is not an official application! It is not maintained or developed by anyone at PiShock in any way. I do not own the PiShock logo or any trademarks/patents they may have.***
+***This is not an official application. It is not maintained or developed by anyone at PiShock in any way. I do not own the PiShock logo or any trademarks/patents they may have.***
 
 ***Like PiShock, I am not responsible for any injuries or harm sustained while using this application or any PiShock device(s), should it occur. That being said, please create an issue immediately if you encounter any issues with my application.***

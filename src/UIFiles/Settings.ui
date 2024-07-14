@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>440</width>
+    <height>310</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>440</width>
+    <height>310</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>440</width>
+    <height>310</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Electra - Settings</string>
+  </property>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>270</y>
+     <width>421</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::Apply|QDialogButtonBox::Discard|QDialogButtonBox::RestoreDefaults</set>
+   </property>
+   <property name="centerButtons">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QTabWidget" name="SettingsTabView">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>421</width>
+     <height>251</height>
+    </rect>
+   </property>
+   <property name="tabShape">
+    <enum>QTabWidget::Rounded</enum>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <widget class="QWidget" name="APITab">
+    <attribute name="title">
+     <string>API</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Configure the PiShock API</string>
+    </attribute>
+    <widget class="QLineEdit" name="APIKeyEntry">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>391</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="placeholderText">
+      <string>Enter API key</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="APIKeyLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>0</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PiShock API Key</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="ShareCodeEntry">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>90</y>
+       <width>391</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="placeholderText">
+      <string>Enter share code</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="ShareCodeLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>70</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Share Code</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="UsernameEntry">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>170</y>
+       <width>391</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="placeholderText">
+      <string>Enter PiShock account username</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="UsernameLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>150</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PiShock Username</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="SerialTab">
+    <attribute name="title">
+     <string>Serial</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Configure serial preferences</string>
+    </attribute>
+    <widget class="QCheckBox" name="EnableSerialCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Communicate with the hub using serial over USB instead of the online API. Local use only.&lt;/p&gt;&lt;p&gt;This is useful when internet isn't available or is very slow.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Enable serial override</string>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="IDsLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>50</y>
+       <width>91</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Shocker IDs</string>
+     </property>
+    </widget>
+    <widget class="Line" name="line">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>25</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+    <widget class="QTableWidget" name="IDsTable">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>70</y>
+       <width>391</width>
+       <height>141</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Used to enter IDs for up to 8 shockers.&lt;/p&gt;&lt;p&gt;For use with the serial override.&lt;/p&gt;&lt;p&gt;Currently Shocker 1 is the only shocker that will be controlled.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::WinPanel</enum>
+     </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+     <row>
+      <property name="text">
+       <string>Shocker 1</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 2</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 3</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 4</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 5</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 6</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 7</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>Shocker 8</string>
+      </property>
+     </row>
+     <column>
+      <property name="text">
+       <string>Shocker ID</string>
+      </property>
+     </column>
+     <item row="0" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="1" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="2" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="3" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="4" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="5" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="6" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+     <item row="7" column="0">
+      <property name="text">
+       <string>Not configured</string>
+      </property>
+     </item>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="RPCTab">
+    <attribute name="title">
+     <string>Discord RPC</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Configure Discord Rich Presence</string>
+    </attribute>
+    <widget class="QCheckBox" name="EnableRPCCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable Discord RPC. &lt;/p&gt;&lt;p&gt;This shows the intensity and duration on your profile.&lt;/p&gt;&lt;p&gt;Requires an active internet connection and Discord to be running.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Enable RPC</string>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="EnableRPCButtonsCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>40</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable RPC profile buttons, which lets other users control a shocker. &lt;/p&gt;&lt;p&gt;Requires RPC to be enabled.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Enable RPC buttons</string>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="DebugTab">
+    <attribute name="title">
+     <string>Debug</string>
+    </attribute>
+    <attribute name="toolTip">
+     <string>Debug settings (console only).</string>
+    </attribute>
+    <widget class="QCheckBox" name="ShowCMDCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show the JSON command that is being sent to the hub.&lt;/p&gt;&lt;p&gt;The online API and serial over USB have different commands.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Show CMD</string>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="ShowIconPixmapCheckBox">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>40</y>
+       <width>391</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show QIcon and QPixmap properties when loading.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Show icon / pixmap information</string>
+     </property>
+     <property name="tristate">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>Dialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>248</x>
+     <y>254</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>157</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>Dialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>260</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
