@@ -180,7 +180,13 @@ try:
     # Compile Electra
     print(f"[INFO] >> Build started at {BuildStartTime}\n\n")
     RPrint(Panel.fit("[blue]🔧 COMPILING ELECTRA 🔧[/blue]", style="bold"))
-    StartProcess(f"pyinstaller {' '.join(PyInstallerOptions)}")
+    
+    if shutil.which("pyinstaller") == None:
+        print("[WARN] >> The pyinstaller executable was not found, trying to proceed with the module command...")
+        StartProcess(f"python -m PyInstaller {' '.join(PyInstallerOptions)}")
+
+    else:
+        StartProcess(f"pyinstaller {' '.join(PyInstallerOptions)}")
 
     
     # Do some cleanup (move the binary, delete temp files & dirs)
