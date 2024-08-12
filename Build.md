@@ -1,7 +1,7 @@
 # Building Electra
 ## Requirements
 > [!NOTE]
-> Linux hosts require the `patchelf` package.
+> Linux hosts may require the `patchelf` package.
 
 In order to build Electra, you'll need to aquire the following:
 
