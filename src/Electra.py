@@ -40,10 +40,10 @@ def GetIntensityDuration(Window):
 ## MAIN CODE ##
 if __name__ == "__main__":
     try:
-        print(f"◄{'─' * 14} {colored("ELECTRA", "light_yellow")} {'─' * 15}►")
+        print(f"◄{'─' * 14} {colored('ELECTRA', 'light_yellow')} {'─' * 15}►")
         print(f"    Electra {Version} by memescoep, 2024\n  https://github.com/MEMESCOEP/Electra\n\n\n\n")
 
-        print(f"◄{'─' * 14} {colored("CONSOLE", "light_grey")} {'─' * 15}►")
+        print(f"◄{'─' * 14} {colored('CONSOLE', 'light_grey')} {'─' * 15}►")
         if hasattr(sys, '_MEIPASS') == True:
             print(f"[{MessageBox.InfoText}] >> Module \"sys._MEIPASS\" contains: \"{sys._MEIPASS}\"")
             os.chdir(sys._MEIPASS)
@@ -62,6 +62,9 @@ if __name__ == "__main__":
         MainWindow = FileUtils.LoadUIFile("UIFiles/MainForm.ui")
 
         # Initialize settings
+        if getattr(sys, 'frozen', False):
+            pyi_splash.close()
+        
         MessageBox.ParentWindow = MainWindow
         Settings.Init()
 
@@ -101,13 +104,10 @@ if __name__ == "__main__":
         MainWindow.setWindowIcon(MainWindowIcon)
         MainWindow.setWindowFlags(QtCore.Qt.WindowCloseButtonHint | QtCore.Qt.WindowMinimizeButtonHint)
         UpdateSliderLabels(MainWindow, False)
-
-        if getattr(sys, 'frozen', False):
-            pyi_splash.close()
-
         MainWindow.show()
 
         print(f"[{MessageBox.InfoText}] >> Checking for first time init...")
+        
         if Settings.SetupOnBoot == True:
             print(f"[{MessageBox.InfoText}] >> Entering first time setup...")
             Settings.ShowSettingsManager(MainWindowIcon)

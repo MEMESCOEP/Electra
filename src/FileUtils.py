@@ -39,7 +39,7 @@ class FileUtils:
             Pixmap = Icon.pixmap(Icon.availableSizes()[0])
             print(f"[{MessageBox.DebugText}] >> QPixmap size: {Pixmap.width()}x{Pixmap.height()}")
             print(f"[{MessageBox.DebugText}] >> QPixmap depth: {Pixmap.depth()}")
-            print(f"[{MessageBox.DebugText}] >> QPixmap has alpha: {"yes" if Pixmap.hasAlpha() == True else "no"}")
+            print(f"[{MessageBox.DebugText}] >> QPixmap has alpha: {'yes' if Pixmap.hasAlpha() == True else 'no'}")
             print(f"[{MessageBox.DebugText}] >> QPixmap DPI: {Pixmap.logicalDpiX()}, {Pixmap.logicalDpiY()}")
             print(f"[{MessageBox.DebugText}] >> QPixmap color count: {Pixmap.colorCount()}")
 
@@ -58,7 +58,7 @@ class FileUtils:
         if FileUtils.ShowIMGInfo == True:
             print(f"[{MessageBox.DebugText}] >> QPixmap size: {Pixmap.width()}x{Pixmap.height()}")
             print(f"[{MessageBox.DebugText}] >> QPixmap depth: {Pixmap.depth()}")
-            print(f"[{MessageBox.DebugText}] >> QPixmap has alpha: {"yes" if Pixmap.hasAlpha() == True else "no"}")
+            print(f"[{MessageBox.DebugText}] >> QPixmap has alpha: {'yes' if Pixmap.hasAlpha() == True else 'no'}")
             print(f"[{MessageBox.DebugText}] >> QPixmap DPI: {Pixmap.logicalDpiX()}, {Pixmap.logicalDpiY()}")
             print(f"[{MessageBox.DebugText}] >> QPixmap color count: {Pixmap.colorCount()}")
 

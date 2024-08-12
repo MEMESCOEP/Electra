@@ -42,7 +42,8 @@ class APIRequests:
             SerialCommand = bytes(f"{{\"cmd\": \"operate\", \"value\": {{\"id\": {APIRequests.SerialShockerIDs[0]}, \"op\": \"{APIRequests.APICommandsSTR[APICommand]}\", \"duration\": {Duration * 100}, \"intensity\": {Intensity}}}}}\n", "utf-8")
             
             if APIRequests.ShowCMD == True:
-                print(f"[{MessageBox.DebugText}] >> Serial command: \"{SerialCommand.decode().replace("\n", "\\n")}\"")
+                CMD = SerialCommand.decode().replace('\n', '\\n')
+                print(f"[{MessageBox.DebugText}] >> Serial command: \"{CMD}\"")
 
             # Send the JSON command to the hub
             APIRequests.SerialHandle.write(SerialCommand)
